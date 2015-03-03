@@ -1,0 +1,24 @@
+Franton Lin and Kai Levy
+Software Design Spring 2015
+
+Interactive Programming Project Proposal!
+
+In this project, we plan on making a 2-dimensional game with ninjas
+
+Minimum viable product: Have a playable game that will entertain you for at least 2 minutes hopefully more.
+Has gravity and some element of randomness. 
+
+    Initial thoughts: Character is a ninja, running = constant sidescrolling, but with movement within game window.
+    Things fall from the sky (shuriken, spinning axes), and buildings generate that you must vault.
+    Other ninjas appear and you can kill them.
+    Get as far as you can!
+
+Learning goals: Make a fun game! Learn pygame and expand knowledge of python and interactive software design.
+
+Stretch goals: Make it really good looking, or perhaps really cerebral. Adding a storyline and make the player emotionally invested.
+
+Libraries: Pygame most definitely. Maybe if something comes up that is useful we will use it.
+
+Mid-project check-in: Have a working physics and engine and collision detection.
+
+Biggest risk: If our game design isn't very fun then it would be lame. Also we haven't used pygame before but we think it'll be cool
