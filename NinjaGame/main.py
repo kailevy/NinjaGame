@@ -13,15 +13,12 @@ import random
 BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
 
-ninja_horiz = 0
-ninja_jump = 0
-num_grass = 0
 MAX_GRASS = 21
 
 class Ninja(pygame.sprite.Sprite):
-    global ninja_horiz
+    # global ninja_horiz
 
-    def __init__(self):
+    def __init__(self,screen_w,screen_h):
         pygame.sprite.Sprite.__init__(self)
 
         # Load the sprite sheet
@@ -31,6 +28,13 @@ class Ninja(pygame.sprite.Sprite):
         self.width = 88
         self.height = 88
 
+        # Sprite position
+        self.x_pos = screen_w/2-self.width/2
+        self.y_pos = screen_h-self.height+4
+
+        self.y_vel = 0
+        self.onGround = True
+
         # Index for choosing which image and time since last change of image
         self.index = 0
         self.dt_image = 0.0
@@ -38,18 +42,26 @@ class Ninja(pygame.sprite.Sprite):
         self.speed = 412
 
         # Rectangle object for positioning
-        self.rect = pygame.Rect(800-self.width/2, 848-self.height+4, self.width, self.height)
+        self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height)
 
-    def update(self, dt):
+    def jump(self):
+        self.y_vel = -1
+
+    def move(self,x_vel,y_vel):
+        pass
+
+    def update(self, dt, ninja_horiz):#, ninja_jump):
         # Add passed time to time since last image change
         self.dt_image += dt
 
+        # if ninja_jump == 1:
+        #     self.jump()
         # Change animation speed based on which direction ninja is moving
         if ninja_horiz == -1:
             if self.rect.left > 0:
                 self.animation_speed = 0.06
-                self.rect = self.rect.move(-self.speed*dt,0)   # Bound character within screen
-                if self.rect.left < 0:
+                self.rect = self.rect.move(-self.speed*dt,0)  
+                if self.rect.left < 0:   # Bound character within screen
                     self.rect.left = 0
             else:
                 self.animation_speed = 0.04
@@ -58,8 +70,8 @@ class Ninja(pygame.sprite.Sprite):
         elif ninja_horiz == 1:
             if self.rect.right < 1600:
                 self.animation_speed = 0.02
-                self.rect = self.rect.move(self.speed*dt,0)    # Bound character within screen
-                if self.rect.right > 1600:
+                self.rect = self.rect.move(self.speed*dt,0)  
+                if self.rect.right > 1600:    # Bound character within screen
                     self.rect.right = 1600
             else:
                 self.animation_speed = 0.04
@@ -72,89 +84,150 @@ class Ninja(pygame.sprite.Sprite):
             self.dt_image = 0
         self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) #Locate the sprite you want
         self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
+    
+        # Fall if in air
+        if not self.onGround:
+            self.y_vel += 0.3
 
+    def collide(self,x_vel,y_vel):
+        for p in self.platforms:
+            if self.collide_rect(self,p):
+                if y_vel > 0:
+                    self.rect.x_pos = p.rect.top
+                    self.onGround = True
+                    self.y_vel = 0
+                
 class Grass(pygame.sprite.Sprite):
-    def __init__(self):
+    """Grass class"""
+    def __init__(self,screen_w,screen_h):
         pygame.sprite.Sprite.__init__(self)
         rand = random.randint(1,8)
         self.image = pygame.image.load("images/grass%d.png"%rand)   # Load a random grass image
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        self.rect = pygame.Rect(1600, 848-self.height+3, self.width, self.height)
+        self.rect = pygame.Rect(screen_w, screen_h-self.height+3, self.width, self.height)
         self.speed = 354
 
     def update(self, dt):
+        """Moves the grass"""
         self.rect = self.rect.move(-self.speed*dt,0)
 
-pygame.init()
+class Background():
+    """Class for background"""
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.grass = pygame.sprite.Group(Grass(width,height))
+        self.num_grass = 1 
+        self.ground = pygame.Rect(0, self.height - 4, self.width, 4)
 
-# Create pygame window
-#infoObject = pygame.display.Info()
-#screen = pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
-screen = pygame.display.set_mode((1600, 848))
-pygame.display.set_caption("NINJAs")
+    def update(self,dt):
+        """Updates background with grass tufts"""
+        if self.num_grass < MAX_GRASS:   # Chance of adding grass if MAX_GRASS isn't reached
+            rand = random.random()
+            if rand < dt*4:
+                Grass(self.width,self.height).add(self.grass)
+                self.num_grass += 1
+        for g in self.grass:             # Remove any grass no longer on the screen from the group
+            if g.rect.right < 0:
+                g.kill()
+                self.num_grass -= 1
+        self.grass.update(dt)
 
-# Set clock and stuff
-done = False
-clock = pygame.time.Clock()
 
-# Initialize sprite
-my_sprite = Ninja()
-#my_ground = Ground()
-my_group = pygame.sprite.Group(my_sprite)
-grass = pygame.sprite.Group(Grass())
-num_grass = 1
+class NinjaModel:
+    """Model for game"""
+    def __init__(self, width, height):
+        self.width = width 
+        self.height = height
+        self.my_sprite = Ninja(width,height)
+        self.my_group = pygame.sprite.Group(self.my_sprite)
+        self.background = Background(self.width,self.height)
+        self.ninja_horiz = 0
+        self.ninja_jump = 0
+        self.platforms = [self.background.ground]
 
-#game = ninjas.Ninjas()
+    def update(self,dt):
+        """Updates player and background"""
+        self.my_group.update(dt,self.ninja_horiz)
+        self.background.update(dt)
 
-lastGetTicks = 0.0
+    def get_drawables(self):
+        """Return list of groups to draw"""
+        return [self.my_group,self.background.grass]#,self.background.ground]
 
-# Actually run the game
-while not done:
-    t = pygame.time.get_ticks()
-    # delta time in seconds.
-    dt = (t - lastGetTicks) / 1000.0
-    lastGetTicks = t
+class NinjaController:
+    """Controller for player"""
+    def __init__(self,model):
+        self.model = model
 
-    # Event processing
-    #done = game.proccess_events()
-    pygame.event.pump
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            done = True
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                ninja_horiz = -1
-            if event.key == pygame.K_RIGHT:
-                ninja_horiz = 1
-            if event.key == pygame.K_UP or event.key == pygame.K_SPACE:
-                ninja_jump = 1
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT and ninja_horiz == -1:
-                ninja_horiz = 0
-            if event.key == pygame.K_RIGHT and ninja_horiz == 1:
-                ninja_horiz = 0
+    def process_events(self):
+        """Manages keypresses"""
+        pygame.event.pump
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                done = True
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    self.model.ninja_horiz = -1
+                if event.key == pygame.K_RIGHT:
+                    self.model.ninja_horiz = 1
+                if event.key == pygame.K_UP or event.key == pygame.K_SPACE:
+                    self.model.ninja_jump = 1
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_LEFT and self.model.ninja_horiz == -1:
+                    self.model.ninja_horiz = 0
+                if event.key == pygame.K_RIGHT and self.model.ninja_horiz == 1:
+                    self.model.ninja_horiz = 0
 
-    # Game Logic
-    if num_grass < MAX_GRASS:   # Chance of adding grass if MAX_GRASS isn't reached
-        rand = random.random()
-        if rand < dt*4:
-            Grass().add(grass)
-            num_grass += 1
-    for g in grass:             # Remove any grass no longer on the screen from the group
-        if g.rect.right < 0:
-            g.kill()
-            num_grass -= 1
-    grass.update(dt)
-    my_group.update(dt)
+class NinjaView:
+    """View for game"""
+    def __init__(self, model, width, height):
+        pygame.init()
+        self.width = width 
+        self.height = height
+        self.screen = pygame.display.set_mode((self.width,self.height))
+        self.model = model
+        pygame.display.set_caption("NINJAs")
 
-    # Drawing
-    screen.fill(WHITE)
-    pygame.draw.rect(screen, BLACK, pygame.Rect(0, 848 - 4, 1600, 4))   # This is the ground
-    my_group.draw(screen)
-    grass.draw(screen)
+    def draw(self):
+        """Redraws game window, fetching drawables from model"""
+        self.screen.fill(WHITE)
+        pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, self.height - 4, self.width, 4))   # This is the ground
+        drawables = self.model.get_drawables()
+        for g in drawables:
+            g.draw(self.screen)
+        pygame.display.flip()
 
-    pygame.display.flip()
-    clock.tick(60)
+class NinjaMain:
+    """Main class"""
 
-pygame.quit()
+    def __init__(self, width = 1024, height = 768):
+        self.width = width
+        self.height = height
+        self.model = NinjaModel(width,height)
+        self.view = NinjaView(self.model,width,height)
+        self.controller = NinjaController(self.model)
+        self.done = False
+        self.clock = pygame.time.Clock()
+
+    def MainLoop(self):
+        """Game loop"""
+        lastGetTicks = 0.0
+
+        while not self.done:
+            t = pygame.time.get_ticks()
+            # delta time in seconds.
+            dt = (t - lastGetTicks) / 1000.0
+            lastGetTicks = t
+
+            self.controller.process_events()
+            self.model.update(dt)
+            self.view.draw()
+
+            self.clock.tick(60)
+
+
+if __name__ == '__main__':
+    MainWindow = NinjaMain()
+    MainWindow.MainLoop()
