@@ -33,7 +33,7 @@ class Ninja(pygame.sprite.Sprite):
         self.y_pos = screen_h-self.height+4
 
         self.y_vel = 0
-        self.onGround = True
+        self.on_ground = True
 
         # Index for choosing which image and time since last change of image
         self.index = 0
@@ -86,7 +86,7 @@ class Ninja(pygame.sprite.Sprite):
         self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
     
         # Fall if in air
-        if not self.onGround:
+        if not self.on_ground:
             self.y_vel += 0.3
 
     def collide(self,x_vel,y_vel):
@@ -94,7 +94,7 @@ class Ninja(pygame.sprite.Sprite):
             if self.collide_rect(self,p):
                 if y_vel > 0:
                     self.rect.x_pos = p.rect.top
-                    self.onGround = True
+                    self.on_ground = True
                     self.y_vel = 0
                 
 class Grass(pygame.sprite.Sprite):
@@ -160,13 +160,14 @@ class NinjaController:
     """Controller for player"""
     def __init__(self,model):
         self.model = model
+        self.done = False
 
     def process_events(self):
         """Manages keypresses"""
         pygame.event.pump
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                done = True
+                self.done = True
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     self.model.ninja_horiz = -1
@@ -179,6 +180,7 @@ class NinjaController:
                     self.model.ninja_horiz = 0
                 if event.key == pygame.K_RIGHT and self.model.ninja_horiz == 1:
                     self.model.ninja_horiz = 0
+        return self.done
 
 class NinjaView:
     """View for game"""
@@ -208,20 +210,20 @@ class NinjaMain:
         self.model = NinjaModel(width,height)
         self.view = NinjaView(self.model,width,height)
         self.controller = NinjaController(self.model)
-        self.done = False
         self.clock = pygame.time.Clock()
 
     def MainLoop(self):
         """Game loop"""
         lastGetTicks = 0.0
+        done = False
 
-        while not self.done:
+        while not done:
             t = pygame.time.get_ticks()
             # delta time in seconds.
             dt = (t - lastGetTicks) / 1000.0
             lastGetTicks = t
 
-            self.controller.process_events()
+            done = self.controller.process_events()
             self.model.update(dt)
             self.view.draw()
 
