@@ -12,13 +12,15 @@ import random
 # Colors
 BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
+SCREEN_W = 1024
+SCREEN_H = 768
 
 MAX_GRASS = 21
 
 class Ninja(pygame.sprite.Sprite):
-    # global ninja_horiz
+    #global SCREEN_W, SCREEN_H
 
-    def __init__(self,screen_w,screen_h):
+    def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
         # Load the sprite sheet
@@ -29,8 +31,8 @@ class Ninja(pygame.sprite.Sprite):
         self.height = 88
 
         # Sprite position
-        self.x_pos = screen_w/2-self.width/2
-        self.y_pos = screen_h-self.height+4
+        self.x_pos = SCREEN_W/2-self.width/2
+        self.y_pos = SCREEN_H-self.height+4
 
         self.y_vel = 0
         self.on_ground = True
@@ -68,11 +70,11 @@ class Ninja(pygame.sprite.Sprite):
         elif ninja_horiz == 0:
             self.animation_speed = 0.04
         elif ninja_horiz == 1:
-            if self.rect.right < 1600:
+            if self.rect.right < SCREEN_W:
                 self.animation_speed = 0.02
                 self.rect = self.rect.move(self.speed*dt,0)  
-                if self.rect.right > 1600:    # Bound character within screen
-                    self.rect.right = 1600
+                if self.rect.right > SCREEN_W:    # Bound character within screen
+                    self.rect.right = SCREEN_W
             else:
                 self.animation_speed = 0.04
 
@@ -82,8 +84,8 @@ class Ninja(pygame.sprite.Sprite):
             if self.index >= 5:
                 self.index = 0
             self.dt_image = 0
-        self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) #Locate the sprite you want
-        self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
+            self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) #Locate the sprite you want
+            self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
     
         # Fall if in air
         if not self.on_ground:
@@ -99,13 +101,13 @@ class Ninja(pygame.sprite.Sprite):
                 
 class Grass(pygame.sprite.Sprite):
     """Grass class"""
-    def __init__(self,screen_w,screen_h):
+    def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         rand = random.randint(1,8)
         self.image = pygame.image.load("images/grass%d.png"%rand)   # Load a random grass image
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        self.rect = pygame.Rect(screen_w, screen_h-self.height+3, self.width, self.height)
+        self.rect = pygame.Rect(SCREEN_W, SCREEN_H-self.height+3, self.width, self.height)
         self.speed = 354
 
     def update(self, dt):
@@ -114,10 +116,10 @@ class Grass(pygame.sprite.Sprite):
 
 class Background():
     """Class for background"""
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.grass = pygame.sprite.Group(Grass(width,height))
+    def __init__(self):
+        self.width = SCREEN_W
+        self.height = SCREEN_H
+        self.grass = pygame.sprite.Group(Grass())
         self.num_grass = 1 
         self.ground = pygame.Rect(0, self.height - 4, self.width, 4)
 
@@ -126,7 +128,7 @@ class Background():
         if self.num_grass < MAX_GRASS:   # Chance of adding grass if MAX_GRASS isn't reached
             rand = random.random()
             if rand < dt*4:
-                Grass(self.width,self.height).add(self.grass)
+                Grass().add(self.grass)
                 self.num_grass += 1
         for g in self.grass:             # Remove any grass no longer on the screen from the group
             if g.rect.right < 0:
@@ -137,12 +139,12 @@ class Background():
 
 class NinjaModel:
     """Model for game"""
-    def __init__(self, width, height):
-        self.width = width 
-        self.height = height
-        self.my_sprite = Ninja(width,height)
+    def __init__(self):
+        self.width = SCREEN_W
+        self.height = SCREEN_H
+        self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        self.background = Background(self.width,self.height)
+        self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
         self.platforms = [self.background.ground]
@@ -184,10 +186,10 @@ class NinjaController:
 
 class NinjaView:
     """View for game"""
-    def __init__(self, model, width, height):
+    def __init__(self, model):
         pygame.init()
-        self.width = width 
-        self.height = height
+        self.width = SCREEN_W
+        self.height = SCREEN_H
         self.screen = pygame.display.set_mode((self.width,self.height))
         self.model = model
         pygame.display.set_caption("NINJAs")
@@ -204,11 +206,11 @@ class NinjaView:
 class NinjaMain:
     """Main class"""
 
-    def __init__(self, width = 1024, height = 768):
+    def __init__(self, width = SCREEN_W, height = SCREEN_H):
         self.width = width
         self.height = height
-        self.model = NinjaModel(width,height)
-        self.view = NinjaView(self.model,width,height)
+        self.model = NinjaModel()
+        self.view = NinjaView(self.model)
         self.controller = NinjaController(self.model)
         self.clock = pygame.time.Clock()
 
