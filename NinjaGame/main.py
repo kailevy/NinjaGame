@@ -18,7 +18,6 @@ SCREEN_H = 768
 MAX_GRASS = int(0.013 * SCREEN_W)
 
 class Ninja(pygame.sprite.Sprite):
-    #global SCREEN_W, SCREEN_H
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -106,6 +105,12 @@ class Ninja(pygame.sprite.Sprite):
                     self.y_vel = 0
                     self.sprite_num = 0
                     self.index = 0
+
+class Platform(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+    # TODO: implement this class
+
                 
 class Grass(pygame.sprite.Sprite):
     """Grass class"""
@@ -129,8 +134,11 @@ class Background():
         self.height = SCREEN_H
         self.grass = pygame.sprite.Group(Grass())
         self.num_grass = 1
-        self.ground = pygame.sprite.Sprite
+        self.ground = pygame.sprite.Sprite      # Not sure if I actually did this correctly
         self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 4)
+        print self.ground.rect.width
+        print self.ground.rect.height
+        self.ground.image = pygame.Surface((self.ground.rect.width, self.ground.rect.height)) # Creates an image for ground?
 
     def update(self,dt):
         """Updates background with grass tufts"""
@@ -161,14 +169,12 @@ class NinjaModel:
     def update(self,dt):
         """Updates player and background"""
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump)
-        if self.ninja_jump == 1:
-            self.ninja_jump = 0 # return jump to false
         self.my_sprite.collide(self.platforms)
         self.background.update(dt)
 
     def get_drawables(self):
         """Return list of groups to draw"""
-        return [self.my_group, self.background.grass]#,self.background.ground]
+        return [self.my_group, self.background.grass]#, pygame.sprite.Group(self.background.ground)]
 
 class NinjaController:
     """Controller for player"""
@@ -178,21 +184,25 @@ class NinjaController:
 
     def process_events(self):
         """Manages keypresses"""
+        if self.model.ninja_jump == 1:
+            self.model.ninja_jump = 0   # return jump to false
         pygame.event.pump
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
+                k = event.key
+                if k == pygame.K_LEFT or k == pygame.K_a:
                     self.model.ninja_horiz = -1
-                if event.key == pygame.K_RIGHT:
+                if k == pygame.K_RIGHT or k == pygame.K_d:
                     self.model.ninja_horiz = 1
-                if event.key == pygame.K_UP or event.key == pygame.K_SPACE:
+                if k == pygame.K_UP or k == pygame.K_SPACE or k == pygame.K_w:
                     self.model.ninja_jump = 1
             if event.type == pygame.KEYUP:
-                if event.key == pygame.K_LEFT and self.model.ninja_horiz == -1:
+                k = event.key
+                if (k == pygame.K_LEFT or k == pygame.K_a) and self.model.ninja_horiz == -1:
                     self.model.ninja_horiz = 0
-                if event.key == pygame.K_RIGHT and self.model.ninja_horiz == 1:
+                if (k == pygame.K_RIGHT or k == pygame.K_d) and self.model.ninja_horiz == 1:
                     self.model.ninja_horiz = 0
         return self.done
 
