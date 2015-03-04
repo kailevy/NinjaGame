@@ -35,6 +35,7 @@ class Ninja(pygame.sprite.Sprite):
         self.y_pos = SCREEN_H-self.height+4
 
         self.y_vel = 0
+        self.x_vel = 0
         self.on_ground = True
 
         # Index for choosing which image and time since last change of image
@@ -50,7 +51,13 @@ class Ninja(pygame.sprite.Sprite):
         self.y_vel = -1
 
     def move(self,x_vel,y_vel):
-        pass
+        self.rect = self.rect.move(x_vel,y_vel)
+        if self.rect.left < 0:   # Bound character within screen
+            self.rect.left = 0
+            self.animation_speed = 0.04
+        elif self.rect.right > SCREEN_W:
+            self.rect.right = SCREEN_W
+            self.animation_speed = 0.04
 
     def update(self, dt, ninja_horiz):#, ninja_jump):
         # Add passed time to time since last image change
@@ -58,25 +65,11 @@ class Ninja(pygame.sprite.Sprite):
 
         # if ninja_jump == 1:
         #     self.jump()
-        # Change animation speed based on which direction ninja is moving
-        if ninja_horiz == -1:
-            if self.rect.left > 0:
-                self.animation_speed = 0.06
-                self.rect = self.rect.move(-self.speed*dt,0)  
-                if self.rect.left < 0:   # Bound character within screen
-                    self.rect.left = 0
-            else:
-                self.animation_speed = 0.04
-        elif ninja_horiz == 0:
-            self.animation_speed = 0.04
-        elif ninja_horiz == 1:
-            if self.rect.right < SCREEN_W:
-                self.animation_speed = 0.02
-                self.rect = self.rect.move(self.speed*dt,0)  
-                if self.rect.right > SCREEN_W:    # Bound character within screen
-                    self.rect.right = SCREEN_W
-            else:
-                self.animation_speed = 0.04
+
+        self.animation_speed = 0.04 - 0.02 * ninja_horiz
+        self.x_vel = ninja_horiz * self.speed * dt 
+
+        self.move(self.x_vel,self.y_vel)
 
         # If enough time has passed, change index to use next image
         if self.dt_image > self.animation_speed:
