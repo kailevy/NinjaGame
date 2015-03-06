@@ -7,6 +7,7 @@ Created on Sun Mar 2 11:37 2015
 """
 
 import pygame
+import os
 import random
 
 # Colors
@@ -14,6 +15,7 @@ BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
 SCREEN_W = 1024
 SCREEN_H = 768
+CURR_DIR = os.getcwd()
 
 MAX_GRASS = int(0.013 * SCREEN_W)
 
@@ -23,7 +25,7 @@ class Ninja(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
 
         # Load the sprite sheet
-        self.sheet = pygame.image.load("images/ninja_sheet.png")
+        self.sheet = pygame.image.load(CURR_DIR + "/images/ninja_sheet.png")
         self.index = 0          # Index for choosing which sprite image
         self.sprite_num = 0     # Index for choosing which sprite sequence
         self.dt_image = 0.0
@@ -117,7 +119,7 @@ class Grass(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         rand = random.randint(1,8)
-        self.image = pygame.image.load("images/grass%d.png"%rand)   # Load a random grass image
+        self.image = pygame.image.load(CURR_DIR + "/images/grass%d.png"%rand)   # Load a random grass image
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.rect = pygame.Rect(SCREEN_W, SCREEN_H-self.height+3, self.width, self.height)
@@ -196,7 +198,7 @@ class NinjaController:
                     self.model.ninja_horiz = -1
                 if k == pygame.K_RIGHT or k == pygame.K_d:
                     self.model.ninja_horiz = 1
-                if k == pygame.K_UP or k == pygame.K_SPACE or k == pygame.K_w:
+                if k == pygame.K_UP or k == pygame.K_SPACE or k == pygame.K_w:  # TODO: Keep jumping if held down
                     self.model.ninja_jump = 1
             if event.type == pygame.KEYUP:
                 k = event.key
