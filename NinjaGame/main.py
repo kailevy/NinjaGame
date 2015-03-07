@@ -71,7 +71,7 @@ class Ninja(pygame.sprite.Sprite):
             self.on_ground = False
             self.sprite_num = 2
             self.index = 1
-            print "\t\tJUMP"
+            #print "\t\tJUMP"
 
         self.animation_speed = 0.04 - 0.02 * ninja_horiz
         self.x_vel = ninja_horiz * self.speed * dt
@@ -79,9 +79,9 @@ class Ninja(pygame.sprite.Sprite):
         # Fall if in air
         if not self.on_ground:
             self.y_vel += 50*dt
-            print "\tIN AIR"
-        else:
-            print "ON GROUND"
+            #print "\tIN AIR"
+        #else:
+            #print "ON GROUND"
 
         self.move(self.x_vel,self.y_vel)
 
@@ -91,7 +91,7 @@ class Ninja(pygame.sprite.Sprite):
             if self.index >= 5:
                 self.index = 0
             self.dt_image = 0
-            self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num * self.height, self.width, self.height)) #Locate the sprite you want
+            self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num * self.height, self.width, self.height)) # Locate the sprite you want
             self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
         elif self.sprite_num == 2:
             self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height))   # 2nd frame of walk is better jump image
@@ -186,26 +186,26 @@ class NinjaController:
 
     def process_events(self):
         """Manages keypresses"""
-        if self.model.ninja_jump == 1:
-            self.model.ninja_jump = 0   # return jump to false
         pygame.event.pump
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 k = event.key
                 if k == pygame.K_LEFT or k == pygame.K_a:
                     self.model.ninja_horiz = -1
-                if k == pygame.K_RIGHT or k == pygame.K_d:
+                elif k == pygame.K_RIGHT or k == pygame.K_d:
                     self.model.ninja_horiz = 1
-                if k == pygame.K_UP or k == pygame.K_SPACE or k == pygame.K_w:  # TODO: Keep jumping if held down
-                    self.model.ninja_jump = 1
-            if event.type == pygame.KEYUP:
+                elif k == pygame.K_UP or k == pygame.K_SPACE or k == pygame.K_w:
+                    self.model.ninja_jump = k
+            elif event.type == pygame.KEYUP:
                 k = event.key
                 if (k == pygame.K_LEFT or k == pygame.K_a) and self.model.ninja_horiz == -1:
                     self.model.ninja_horiz = 0
-                if (k == pygame.K_RIGHT or k == pygame.K_d) and self.model.ninja_horiz == 1:
+                elif (k == pygame.K_RIGHT or k == pygame.K_d) and self.model.ninja_horiz == 1:
                     self.model.ninja_horiz = 0
+                elif k == self.model.ninja_jump:
+                    self.model.ninja_jump = 0
         return self.done
 
 class NinjaView:
