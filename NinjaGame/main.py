@@ -44,8 +44,11 @@ class Ninja(pygame.sprite.Sprite):
         self.y_vel = 0
         self.x_vel = 0
         self.on_ground = True
+        self.jump_counter = 0
 
         self.speed = 412
+        self.min_jump = 4
+        self.max_jump = 6
 
         # Rectangle object for positioning
         self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height-8)  # 8 extra pixels on bottom of sprite
@@ -66,19 +69,25 @@ class Ninja(pygame.sprite.Sprite):
         # Add passed time to time since last image change
         self.dt_image += dt
 
-        if ninja_jump and self.on_ground:
-            self.y_vel = -1000*dt
+        if ninja_jump and self.jump_counter < self.max_jump:# and self.on_ground:
+            self.y_vel += -248*dt
+            self.jump_counter += 1
             self.on_ground = False
             self.sprite_num = 2
             self.index = 1
             #print "\t\tJUMP"
+        elif self.jump_counter > 0 and self.jump_counter < self.min_jump:
+            self.y_vel += -248*dt
+            self.jump_counter += 1
+        elif self.jump_counter > 0:
+            self.jump_counter = self.max_jump
 
         self.animation_speed = 0.04 - 0.02 * ninja_horiz
         self.x_vel = ninja_horiz * self.speed * dt
 
         # Fall if in air
         if not self.on_ground:
-            self.y_vel += 50*dt
+            self.y_vel += 57*dt
             #print "\tIN AIR"
         #else:
             #print "ON GROUND"
@@ -107,6 +116,7 @@ class Ninja(pygame.sprite.Sprite):
                     self.y_vel = 0
                     self.sprite_num = 0
                     self.index = 0
+                    self.jump_counter = 0
 
 class Platform(pygame.sprite.Sprite):
     def __init__(self):
@@ -137,9 +147,7 @@ class Background():
         self.grass = pygame.sprite.Group(Grass())
         self.num_grass = 1
         self.ground = pygame.sprite.Sprite      # Not sure if I actually did this correctly
-        self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 4)
-        print self.ground.rect.width
-        print self.ground.rect.height
+        self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 4)   # TODO: Make ground ininitely thick
         self.ground.image = pygame.Surface((self.ground.rect.width, self.ground.rect.height)) # Creates an image for ground?
 
     def update(self,dt):
@@ -206,6 +214,8 @@ class NinjaController:
                     self.model.ninja_horiz = 0
                 elif k == self.model.ninja_jump:
                     self.model.ninja_jump = 0
+                    #if not self.model.my_sprite.on_ground:  # deal with case of releasing key while hitting ground
+                    #    self.model.my_sprite.jump_counter = self.model.my_sprite.max_jump + 1
         return self.done
 
 class NinjaView:
@@ -241,7 +251,7 @@ class NinjaMain:
     def MainLoop(self):
         """Game loop"""
         lastGetTicks = 0.0
-        done = False
+        done = False    
 
         while not done:
             t = pygame.time.get_ticks()
