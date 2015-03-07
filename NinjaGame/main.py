@@ -91,10 +91,10 @@ class Ninja(pygame.sprite.Sprite):
             if self.index >= 5:
                 self.index = 0
             self.dt_image = 0
-            self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num, self.width, self.height)) #Locate the sprite you want
+            self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num * self.height, self.width, self.height)) #Locate the sprite you want
             self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
         elif self.sprite_num == 2:
-            self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num, self.width, self.height))
+            self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height))   # 2nd frame of walk is better jump image
             self.image = self.sheet.subsurface(self.sheet.get_clip())
 
 
