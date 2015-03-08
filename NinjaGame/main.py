@@ -123,7 +123,7 @@ class Platform(pygame.sprite.Sprite):
 
 class Shuriken(pygame.sprite.Sprite):
     """Shuriken class"""
-    def __init__(self):
+    def __init__(self, x_pos):
         pygame.sprite.Sprite.__init__(self)
 
         # Load the sprite sheet
@@ -136,11 +136,11 @@ class Shuriken(pygame.sprite.Sprite):
         self.width = 42
         self.height = 42
 
-        self.y_vel = 0
+        self.y_vel = 650
         self.x_vel = 354
         self.on_ground = False
 
-        self.rect = pygame.Rect(SCREEN_W-self.width, 0, self.width, self.height)
+        self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
 
         self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
         self.image = self.sheet.subsurface(self.sheet.get_clip())
@@ -150,17 +150,26 @@ class Shuriken(pygame.sprite.Sprite):
         self.dt_image += dt
 
         if not self.on_ground:
-            self.y_vel += 20
+            self.y_vel += 10
+            if self.dt_image > self.animation_speed:
+                self.index += 1
+                if self.index >= 3:
+                    self.index = 0
+                self.dt_image = 0
+                self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
+                self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
 
         self.rect = self.rect.move(-self.x_vel*dt, self.y_vel*dt)
-        print self.rect
-        if self.dt_image > self.animation_speed:
-            self.index += 1
-            if self.index >= 3:
-                self.index = 0
-            self.dt_image = 0
-            self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
-            self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
+
+    def collide(self, platforms):
+        for p in platforms:
+            if self.rect.colliderect(p):
+                if self.index == 0:
+                    self.rect.bottom = p.rect.top + 7
+                elif self.index == 1 or self.index == 2:
+                    self.rect.bottom = p.rect.top + 5
+                self.on_ground = True
+                self.y_vel = 0
                 
 class Grass(pygame.sprite.Sprite):
     """Grass class"""
@@ -209,7 +218,7 @@ class NinjaModel:
         self.height = SCREEN_H
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        self.projectiles = pygame.sprite.Group(Shuriken())
+        self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
@@ -220,6 +229,8 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump)
         self.projectiles.update(dt)
         self.my_sprite.collide(self.platforms)
+        for p in self.projectiles:
+            p.collide(self.platforms)
         self.background.update(dt)
 
     def get_drawables(self):
