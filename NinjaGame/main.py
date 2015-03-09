@@ -117,11 +117,27 @@ class Ninja(pygame.sprite.Sprite):
                     self.sprite_num = 0
                     self.index = 0
                     self.jump_counter = 0
+                elif self.rect.left < p.rect.left:
+                    self.rect.right = p.rect.left
+                elif self.rect.right > p.rect.right:
+                    self.rect.left = p.rect.right
+                    
 
-class Platform(pygame.sprite.Sprite):
-    def __init__(self):
+class Block(pygame.sprite.Sprite):
+    """Class for blocks that come at the Ninja"""
+    def __init__(self,width,height):
         pygame.sprite.Sprite.__init__(self)
-    # TODO: implement this class
+        self.image = pygame.Surface([width,height])
+        self.image.fill(BLACK)
+        self.speed = 354
+
+        self.rect = self.image.get_rect()
+        self.rect.x = SCREEN_W - width
+        self.rect.y = SCREEN_H - height + 4
+
+    def update(self, dt):
+        """Move the blocks"""
+        self.rect = self.rect.move(-self.speed*dt,0)
 
                 
 class Grass(pygame.sprite.Sprite):
@@ -171,20 +187,23 @@ class NinjaModel:
         self.height = SCREEN_H
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
+        self.block = Block(40,40)
+        self.block_group = pygame.sprite.Group(self.block)
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
-        self.platforms = [self.background.ground]
+        self.platforms = [self.background.ground,self.block]
 
     def update(self,dt):
         """Updates player and background"""
-        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump)
         self.my_sprite.collide(self.platforms)
+        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump)
         self.background.update(dt)
+        self.block.update(dt)
 
     def get_drawables(self):
         """Return list of groups to draw"""
-        return [self.my_group, self.background.grass]#, pygame.sprite.Group(self.background.ground)]
+        return [self.my_group, self.background.grass, self.block_group]#, pygame.sprite.Group(self.background.ground)]
 
 class NinjaController:
     """Controller for player"""
