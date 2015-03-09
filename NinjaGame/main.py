@@ -15,7 +15,7 @@ BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
 SCREEN_W = 1024
 SCREEN_H = 768
-CURR_DIR = os.getcwd()
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 MAX_GRASS = int(0.013 * SCREEN_W)
 
@@ -31,15 +31,9 @@ class Ninja(pygame.sprite.Sprite):
         self.dt_image = 0.0
         self.animation_speed = 0.04
 
-        self.sprite_num
-
         # Size of single frame in pixels
         self.width = 88
         self.height = 88
-
-        # Sprite position
-        self.x_pos = SCREEN_W/2-self.width/2
-        self.y_pos = SCREEN_H-self.height+4
 
         self.y_vel = 0
         self.x_vel = 0
@@ -51,7 +45,11 @@ class Ninja(pygame.sprite.Sprite):
         self.max_jump = 6
 
         # Rectangle object for positioning
-        self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height-8)  # 8 extra pixels on bottom of sprite
+        self.rect = pygame.Rect(SCREEN_W/2-self.width/2, SCREEN_H-self.height+4, self.width, self.height-8)  # 8 extra pixels on bottom of sprite
+
+        self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num * self.height, self.width, self.height)) # Locate the sprite you want
+        self.image = self.sheet.subsurface(self.sheet.get_clip())
+        self.index += 1
 
     def jump(self):
         self.y_vel = -1
@@ -70,29 +68,29 @@ class Ninja(pygame.sprite.Sprite):
         self.dt_image += dt
 
         if ninja_jump and self.jump_counter < self.max_jump:# and self.on_ground:
-            self.y_vel += -248*dt
+            self.y_vel += -248
             self.jump_counter += 1
             self.on_ground = False
             self.sprite_num = 2
             self.index = 1
             #print "\t\tJUMP"
         elif self.jump_counter > 0 and self.jump_counter < self.min_jump:
-            self.y_vel += -248*dt
+            self.y_vel += -248
             self.jump_counter += 1
         elif self.jump_counter > 0:
             self.jump_counter = self.max_jump
 
         self.animation_speed = 0.04 - 0.02 * ninja_horiz
-        self.x_vel = ninja_horiz * self.speed * dt
+        self.x_vel = ninja_horiz * self.speed
 
         # Fall if in air
         if not self.on_ground:
-            self.y_vel += 57*dt
+            self.y_vel += 57
             #print "\tIN AIR"
         #else:
             #print "ON GROUND"
 
-        self.move(self.x_vel,self.y_vel)
+        self.move(self.x_vel*dt,self.y_vel*dt)
 
         # If enough time has passed, change index to use next image
         if self.dt_image > self.animation_speed and self.sprite_num == 0:
@@ -123,6 +121,55 @@ class Platform(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
     # TODO: implement this class
 
+class Shuriken(pygame.sprite.Sprite):
+    """Shuriken class"""
+    def __init__(self, x_pos):
+        pygame.sprite.Sprite.__init__(self)
+
+        # Load the sprite sheet
+        self.sheet = pygame.image.load(CURR_DIR + "/images/shuriken_sheet.png")
+        self.index = 0          # Index for choosing which sprite image
+        self.dt_image = 0.0
+        self.animation_speed = 0.02
+
+        # Size of single frame in pixels
+        self.width = 42
+        self.height = 42
+
+        self.y_vel = 650
+        self.x_vel = 354
+        self.on_ground = False
+
+        self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
+
+        self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
+        self.image = self.sheet.subsurface(self.sheet.get_clip())
+        self.index += 1
+
+    def update(self, dt):
+        self.dt_image += dt
+
+        if not self.on_ground:
+            self.y_vel += 10
+            if self.dt_image > self.animation_speed:
+                self.index += 1
+                if self.index >= 3:
+                    self.index = 0
+                self.dt_image = 0
+                self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
+                self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
+
+        self.rect = self.rect.move(-self.x_vel*dt, self.y_vel*dt)
+
+    def collide(self, platforms):
+        for p in platforms:
+            if self.rect.colliderect(p):
+                if self.index == 0:
+                    self.rect.bottom = p.rect.top + 7
+                elif self.index == 1 or self.index == 2:
+                    self.rect.bottom = p.rect.top + 5
+                self.on_ground = True
+                self.y_vel = 0
                 
 class Grass(pygame.sprite.Sprite):
     """Grass class"""
@@ -148,7 +195,7 @@ class Background():
         self.num_grass = 1
         self.ground = pygame.sprite.Sprite      # Not sure if I actually did this correctly
         self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 4)   # TODO: Make ground ininitely thick
-        self.ground.image = pygame.Surface((self.ground.rect.width, self.ground.rect.height)) # Creates an image for ground?
+        #self.ground.image = pygame.Surface((self.ground.rect.width, self.ground.rect.height)) # Creates an image for ground?
 
     def update(self,dt):
         """Updates background with grass tufts"""
@@ -171,6 +218,7 @@ class NinjaModel:
         self.height = SCREEN_H
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
+        self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
@@ -179,12 +227,15 @@ class NinjaModel:
     def update(self,dt):
         """Updates player and background"""
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump)
+        self.projectiles.update(dt)
         self.my_sprite.collide(self.platforms)
+        for p in self.projectiles:
+            p.collide(self.platforms)
         self.background.update(dt)
 
     def get_drawables(self):
         """Return list of groups to draw"""
-        return [self.my_group, self.background.grass]#, pygame.sprite.Group(self.background.ground)]
+        return [self.my_group, self.background.grass, self.projectiles]#, pygame.sprite.Group(self.background.ground)]
 
 class NinjaController:
     """Controller for player"""
