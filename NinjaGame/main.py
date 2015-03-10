@@ -16,6 +16,10 @@ WHITE    = (255, 255, 255)
 SCREEN_W = 1024
 SCREEN_H = 768
 CURR_DIR = os.getcwd()
+LEFT = 0
+RIGHT = 1
+TOP = 2
+BOTTOM = 3
 
 MAX_GRASS = int(0.013 * SCREEN_W)
 
@@ -52,12 +56,15 @@ class Ninja(pygame.sprite.Sprite):
 
         # Rectangle object for positioning
         self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height-8)  # 8 extra pixels on bottom of sprite
+        self.feet = pygame.Rect(self.x_pos + 24, self.y_pos + self.height - 8, 40, 2)
 
     def jump(self):
         self.y_vel = -1
 
     def move(self,x_vel,y_vel):
         self.rect = self.rect.move(x_vel,y_vel)
+        self.feet = self.feet.move(x_vel,y_vel)
+        # self.feet = pygame.Rect(self.rect.x + 24, self.rect.y + self.height - 8, 40, 2)
         if self.rect.left < 0:              # Bound character within screen on left
             self.rect.left = 0
             self.animation_speed = 0.04
@@ -65,7 +72,7 @@ class Ninja(pygame.sprite.Sprite):
             self.rect.right = SCREEN_W
             self.animation_speed = 0.04
 
-    def update(self, dt, ninja_horiz, ninja_jump):
+    def update(self, dt, ninja_horiz, ninja_jump,platforms):
         # Add passed time to time since last image change
         self.dt_image += dt
 
@@ -94,6 +101,8 @@ class Ninja(pygame.sprite.Sprite):
 
         self.move(self.x_vel,self.y_vel)
 
+        self.collide(platforms)
+
         # If enough time has passed, change index to use next image
         if self.dt_image > self.animation_speed and self.sprite_num == 0:
             self.index += 1
@@ -106,22 +115,41 @@ class Ninja(pygame.sprite.Sprite):
             self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height))   # 2nd frame of walk is better jump image
             self.image = self.sheet.subsurface(self.sheet.get_clip())
 
+    def walk(self):
+        print 't'
+        self.sprite_num = 0
+        self.index = 0
+        self.jump_counter = 0
+        self.y_vel = 0
+        self.on_ground = True
 
     def collide(self, platforms):
+        walking = False
         for p in platforms:
+            if self.feet.colliderect(p) and not self.on_ground:
+                self.rect.bottom = p.rect.top
+                self.on_ground = True
+                self.y_vel = 0
+                self.sprite_num = 0
+                self.index = 0
+                self.jump_counter = 0
+            if self.feet.colliderect(p):
+                walking = True
             if self.rect.colliderect(p):
-                if self.y_vel > 0:
-                    self.rect.bottom = p.rect.top
-                    self.on_ground = True
-                    self.y_vel = 0
-                    self.sprite_num = 0
-                    self.index = 0
-                    self.jump_counter = 0
-                elif self.rect.left < p.rect.left:
+                if self.rect.left < p.rect.left:
                     self.rect.right = p.rect.left
                 elif self.rect.right > p.rect.right:
                     self.rect.left = p.rect.right
-                    
+            self.correct_feet()
+
+        if not walking:
+            self.on_ground = False
+
+
+    def correct_feet(self):
+        self.feet.left = self.rect.left + 24
+        self.feet.top = self.rect.bottom
+
 
 class Block(pygame.sprite.Sprite):
     """Class for blocks that come at the Ninja"""
@@ -132,7 +160,7 @@ class Block(pygame.sprite.Sprite):
         self.speed = 354
 
         self.rect = self.image.get_rect()
-        self.rect.x = SCREEN_W - width
+        self.rect.x = SCREEN_W - width -100
         self.rect.y = SCREEN_H - height + 4
 
     def update(self, dt):
@@ -163,7 +191,7 @@ class Background():
         self.grass = pygame.sprite.Group(Grass())
         self.num_grass = 1
         self.ground = pygame.sprite.Sprite      # Not sure if I actually did this correctly
-        self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 4)   # TODO: Make ground ininitely thick
+        self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 100)   # TODO: Make ground ininitely thick
         self.ground.image = pygame.Surface((self.ground.rect.width, self.ground.rect.height)) # Creates an image for ground?
 
     def update(self,dt):
@@ -196,8 +224,8 @@ class NinjaModel:
 
     def update(self,dt):
         """Updates player and background"""
-        self.my_sprite.collide(self.platforms)
-        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump)
+        # self.my_sprite.collide(self.platforms)
+        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump,self.platforms)
         self.background.update(dt)
         self.block.update(dt)
 
@@ -251,6 +279,9 @@ class NinjaView:
         """Redraws game window, fetching drawables from model"""
         self.screen.fill(WHITE)
         pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, self.height - 4, self.width, 4))   # This is the ground
+
+        pygame.draw.rect(self.screen, [255,0,0], self.model.my_sprite.feet)
+
         drawables = self.model.get_drawables()
         for g in drawables:
             g.draw(self.screen)
