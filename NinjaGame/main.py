@@ -295,15 +295,17 @@ class NinjaController:
     def __init__(self,model):
         self.model = model
         self.done = False
+        self.pause = False
 
     def process_events(self):
         """Manages keypresses"""
         pygame.event.pump
+        self.pause = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
             elif event.type == pygame.KEYDOWN:
-                k = event.key
+                k = event.key   
                 if k == pygame.K_LEFT or k == pygame.K_a:
                     self.model.ninja_horiz = -1
                 elif k == pygame.K_RIGHT or k == pygame.K_d:
@@ -312,7 +314,9 @@ class NinjaController:
                     self.model.ninja_jump = k
             elif event.type == pygame.KEYUP:
                 k = event.key
-                if (k == pygame.K_LEFT or k == pygame.K_a) and self.model.ninja_horiz == -1:
+                if k == pygame.K_p:
+                    self.pause = True
+                elif (k == pygame.K_LEFT or k == pygame.K_a) and self.model.ninja_horiz == -1:
                     self.model.ninja_horiz = 0
                 elif (k == pygame.K_RIGHT or k == pygame.K_d) and self.model.ninja_horiz == 1:
                     self.model.ninja_horiz = 0
@@ -320,7 +324,8 @@ class NinjaController:
                     self.model.ninja_jump = 0
                     #if not self.model.my_sprite.on_ground:  # deal with case of releasing key while hitting ground
                     #    self.model.my_sprite.jump_counter = self.model.my_sprite.max_jump + 1
-        return self.done
+        # print str(self.pause)
+        return (self.done,self.pause)
 
 class NinjaView:
     """View for game"""
@@ -359,20 +364,32 @@ class NinjaMain:
     def MainLoop(self):
         """Game loop"""
         lastGetTicks = 0.0
-        done = False    
+        done = False
+        pause = False    
 
         while not done:
-            t = pygame.time.get_ticks()
-            # delta time in seconds.
-            dt = (t - lastGetTicks) / 1000.0
-            lastGetTicks = t
+            if pause:
+                lastGetTicks += pygame.time.wait(1)
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYUP:
+                        if event.key == pygame.K_p:
+                            pause = False
+                    elif event.type == pygame.QUIT:
+                        done = True 
+            else:
+                t = pygame.time.get_ticks()
+                # delta time in seconds.
+                dt = (t - lastGetTicks) / 1000.0
+                lastGetTicks = t
 
-            done = self.controller.process_events()
-            self.model.update(dt)
-            self.view.draw()
+                done, pause = self.controller.process_events()
+                self.model.update(dt)
+                self.view.draw()
 
-            self.clock.tick(60)
+                self.clock.tick(60)
 
+            
+                    
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
