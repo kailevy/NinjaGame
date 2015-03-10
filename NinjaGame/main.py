@@ -41,6 +41,9 @@ class Ninja(pygame.sprite.Sprite):
         self.on_ground = True
         self.jump_counter = 0
 
+        self.x_pos = SCREEN_W / 2 - self.width / 2
+        self.y_pos = SCREEN_H - self.height + 4
+
         self.speed = 412
         self.min_jump = 4
         self.max_jump = 6
@@ -240,7 +243,7 @@ class Background():
         self.grass = pygame.sprite.Group(Grass())
         self.num_grass = 1
         self.ground = pygame.sprite.Sprite      # Not sure if I actually did this correctly
-        self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 4)   # TODO: Make ground ininitely thick
+        self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 1000)   # TODO: Make ground ininitely thick
         #self.ground.image = pygame.Surface((self.ground.rect.width, self.ground.rect.height)) # Creates an image for ground?
 
     def update(self,dt):
