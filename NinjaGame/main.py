@@ -335,6 +335,9 @@ class NinjaView:
         self.height = SCREEN_H
         self.screen = pygame.display.set_mode((self.width,self.height))
         self.model = model
+        pygame.font.init()
+        self.font = pygame.font.Font('visitor2.ttf', 80)
+        self.pause_surf = self.font.render("PRESS P!", False, WHITE)
         pygame.display.set_caption("NINJAs")
 
     def draw(self):
@@ -349,6 +352,12 @@ class NinjaView:
         for g in drawables:
             g.draw(self.screen)
         pygame.display.flip()
+
+    def draw_pause(self):
+        self.screen.fill(BLACK)
+        self.screen.blit(self.pause_surf,(380,400))
+        pygame.display.flip()
+        return pygame.time.delay(10)
 
 class NinjaMain:
     """Main class"""
@@ -369,7 +378,7 @@ class NinjaMain:
 
         while not done:
             if pause:
-                lastGetTicks += pygame.time.wait(1)
+                lastGetTicks += self.view.draw_pause()
                 for event in pygame.event.get():
                     if event.type == pygame.KEYUP:
                         if event.key == pygame.K_p:
