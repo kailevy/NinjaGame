@@ -324,7 +324,6 @@ class NinjaController:
                     self.model.ninja_jump = 0
                     #if not self.model.my_sprite.on_ground:  # deal with case of releasing key while hitting ground
                     #    self.model.my_sprite.jump_counter = self.model.my_sprite.max_jump + 1
-        # print str(self.pause)
         return (self.done,self.pause)
 
 class NinjaView:
@@ -374,7 +373,7 @@ class NinjaMain:
         """Game loop"""
         lastGetTicks = 0.0
         done = False
-        pause = False    
+        pause = True  
 
         while not done:
             if pause:
