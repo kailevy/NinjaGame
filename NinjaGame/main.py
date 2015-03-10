@@ -56,6 +56,7 @@ class Ninja(pygame.sprite.Sprite):
 
         # Rectangle object for positioning
         self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height-8)  # 8 extra pixels on bottom of sprite
+        self.hitbox = pygame.Rect(self.rect.x + 16, self.rect.y + 16, self.width - 32, self.height - 34)
         self.feet = pygame.Rect(self.x_pos + 24, self.y_pos + self.height - 8, 40, 2)
 
     def jump(self):
@@ -64,12 +65,12 @@ class Ninja(pygame.sprite.Sprite):
     def move(self,x_vel,y_vel):
         self.rect = self.rect.move(x_vel,y_vel)
         self.feet = self.feet.move(x_vel,y_vel)
-        # self.feet = pygame.Rect(self.rect.x + 24, self.rect.y + self.height - 8, 40, 2)
+        self.hitbox = self.hitbox.move(x_vel,y_vel)
         if self.rect.left < 0:              # Bound character within screen on left
-            self.rect.left = 0
+            self.hitbox.left = 16
             self.animation_speed = 0.04
         elif self.rect.right > SCREEN_W:    # Bound character within screen on right
-            self.rect.right = SCREEN_W
+            self.hitbox.right = SCREEN_W - 16
             self.animation_speed = 0.04
 
     def update(self, dt, ninja_horiz, ninja_jump,platforms):
@@ -126,8 +127,9 @@ class Ninja(pygame.sprite.Sprite):
     def collide(self, platforms):
         walking = False
         for p in platforms:
+            self.correct_boxes()    
             if self.feet.colliderect(p) and not self.on_ground:
-                self.rect.bottom = p.rect.top
+                self.hitbox.bottom = p.rect.top - 10
                 self.on_ground = True
                 self.y_vel = 0
                 self.sprite_num = 0
@@ -135,20 +137,23 @@ class Ninja(pygame.sprite.Sprite):
                 self.jump_counter = 0
             if self.feet.colliderect(p):
                 walking = True
-            if self.rect.colliderect(p):
-                if self.rect.left < p.rect.left:
-                    self.rect.right = p.rect.left
-                elif self.rect.right > p.rect.right:
-                    self.rect.left = p.rect.right
-            self.correct_feet()
+            if self.hitbox.colliderect(p):
+                if self.hitbox.left < p.rect.left:
+                    self.hitbox.right = p.rect.left
+                elif self.hitbox.right > p.rect.right:
+                    self.hitbox.left = p.rect.right
+            self.correct_boxes()
 
         if not walking:
             self.on_ground = False
 
 
-    def correct_feet(self):
-        self.feet.left = self.rect.left + 24
-        self.feet.top = self.rect.bottom
+    def correct_boxes(self):
+        self.feet.left = self.hitbox.left + 8
+        self.feet.top = self.hitbox.bottom + 10
+        self.rect.left = self.hitbox.left - 16
+        self.rect.top = self.hitbox.top - 16
+
 
 
 class Block(pygame.sprite.Sprite):
@@ -160,7 +165,7 @@ class Block(pygame.sprite.Sprite):
         self.speed = 354
 
         self.rect = self.image.get_rect()
-        self.rect.x = SCREEN_W - width -100
+        self.rect.x = SCREEN_W - width 
         self.rect.y = SCREEN_H - height + 4
 
     def update(self, dt):
@@ -281,6 +286,7 @@ class NinjaView:
         pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, self.height - 4, self.width, 4))   # This is the ground
 
         pygame.draw.rect(self.screen, [255,0,0], self.model.my_sprite.feet)
+        pygame.draw.rect(self.screen, [0, 255, 0], self.model.my_sprite.hitbox)
 
         drawables = self.model.get_drawables()
         for g in drawables:
