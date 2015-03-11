@@ -280,7 +280,6 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump,self.platforms)
 
         self.projectiles.update(dt)
-        self.my_sprite.collide(self.platforms)
         for p in self.projectiles:
             p.collide(self.platforms)
         self.background.update(dt)
@@ -295,15 +294,17 @@ class NinjaController:
     def __init__(self,model):
         self.model = model
         self.done = False
+        self.pause = False
 
     def process_events(self):
         """Manages keypresses"""
         pygame.event.pump
+        self.pause = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
             elif event.type == pygame.KEYDOWN:
-                k = event.key
+                k = event.key   
                 if k == pygame.K_LEFT or k == pygame.K_a:
                     self.model.ninja_horiz = -1
                 elif k == pygame.K_RIGHT or k == pygame.K_d:
@@ -312,7 +313,9 @@ class NinjaController:
                     self.model.ninja_jump = k
             elif event.type == pygame.KEYUP:
                 k = event.key
-                if (k == pygame.K_LEFT or k == pygame.K_a) and self.model.ninja_horiz == -1:
+                if k == pygame.K_p:
+                    self.pause = True
+                elif (k == pygame.K_LEFT or k == pygame.K_a) and self.model.ninja_horiz == -1:
                     self.model.ninja_horiz = 0
                 elif (k == pygame.K_RIGHT or k == pygame.K_d) and self.model.ninja_horiz == 1:
                     self.model.ninja_horiz = 0
@@ -320,7 +323,7 @@ class NinjaController:
                     self.model.ninja_jump = 0
                     #if not self.model.my_sprite.on_ground:  # deal with case of releasing key while hitting ground
                     #    self.model.my_sprite.jump_counter = self.model.my_sprite.max_jump + 1
-        return self.done
+        return (self.done,self.pause)
 
 class NinjaView:
     """View for game"""
@@ -330,6 +333,9 @@ class NinjaView:
         self.height = SCREEN_H
         self.screen = pygame.display.set_mode((self.width,self.height))
         self.model = model
+        pygame.font.init()
+        self.font = pygame.font.Font('visitor2.ttf', 80)
+        self.pause_surf = self.font.render("PRESS P!", False, WHITE)
         pygame.display.set_caption("NINJAs")
 
     def draw(self):
@@ -343,6 +349,11 @@ class NinjaView:
         drawables = self.model.get_drawables()
         for g in drawables:
             g.draw(self.screen)
+        pygame.display.flip()
+
+    def draw_pause(self):
+        self.screen.fill(BLACK)
+        self.screen.blit(self.pause_surf,(380,400))
         pygame.display.flip()
 
 class NinjaMain:
@@ -359,20 +370,35 @@ class NinjaMain:
     def MainLoop(self):
         """Game loop"""
         lastGetTicks = 0.0
-        done = False    
+        done = False
+        pause = True  
 
         while not done:
-            t = pygame.time.get_ticks()
-            # delta time in seconds.
-            dt = (t - lastGetTicks) / 1000.0
-            lastGetTicks = t
+            if pause:
+                self.view.draw_pause()
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYUP:
+                        if event.key == pygame.K_p:
+                            pause = False
+                            lastGetTicks = pygame.time.get_ticks()
+                            self.model.ninja_jump = 0
+                            self.model.ninja_horiz = 0
+                    elif event.type == pygame.QUIT:
+                        done = True 
+            else:
+                t = pygame.time.get_ticks()
+                # delta time in seconds.
+                dt = (t - lastGetTicks) / 1000.0
+                lastGetTicks = t
 
-            done = self.controller.process_events()
-            self.model.update(dt)
-            self.view.draw()
+                done, pause = self.controller.process_events()
+                self.model.update(dt)
+                self.view.draw()
 
-            self.clock.tick(60)
+                self.clock.tick(60)
 
+            
+                    
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
