@@ -265,6 +265,9 @@ class NinjaModel:
     def __init__(self):
         self.width = SCREEN_W
         self.height = SCREEN_H
+        self.score = 0
+        self.score_dt = 0
+        self.score_speed = 0.5
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
         self.platform = Platform(40,40)
@@ -284,6 +287,14 @@ class NinjaModel:
             p.collide(self.platforms)
         self.background.update(dt)
         self.platform.update(dt)
+        self.score_dt += dt
+
+        if self.score_dt >= self.score_speed:
+            self.update_score()
+            self.score_dt = 0
+
+    def update_score(self):
+        self.score += 10 
 
     def get_drawables(self):
         """Return list of groups to draw"""
@@ -349,12 +360,17 @@ class NinjaView:
         drawables = self.model.get_drawables()
         for g in drawables:
             g.draw(self.screen)
+        self.draw_score()
         pygame.display.flip()
 
     def draw_pause(self):
         self.screen.fill(BLACK)
         self.screen.blit(self.pause_surf,(380,400))
         pygame.display.flip()
+
+    def draw_score(self):
+        self.score_surf = self.font.render(str(self.model.score), False, BLACK)
+        self.screen.blit(self.score_surf, (20,20))
 
 class NinjaMain:
     """Main class"""
