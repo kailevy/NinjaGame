@@ -156,15 +156,15 @@ class Ninja(pygame.sprite.Sprite):
 
 class Platform(pygame.sprite.Sprite):
     """Class for platforms that come at the Ninja"""
-    def __init__(self,width,height):
+    def __init__(self,x,y,width,height,speed=354):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([width,height])
         self.image.fill(BLACK)
-        self.speed = 354
+        self.speed = speed
 
         self.rect = self.image.get_rect()
-        self.rect.x = SCREEN_W - width 
-        self.rect.y = SCREEN_H - height + 4
+        self.rect.x = x
+        self.rect.y = y
 
     def update(self, dt):
         """Move the platforms"""
@@ -238,13 +238,8 @@ class Grass(pygame.sprite.Sprite):
 class Background():
     """Class for background"""
     def __init__(self):
-        self.width = SCREEN_W
-        self.height = SCREEN_H
         self.grass = pygame.sprite.Group(Grass())
         self.num_grass = 1
-        self.ground = pygame.sprite.Sprite      # Not sure if I actually did this correctly
-        self.ground.rect = pygame.Rect(0, self.height - 4, self.width, 1000)   # TODO: Make ground ininitely thick
-        #self.ground.image = pygame.Surface((self.ground.rect.width, self.ground.rect.height)) # Creates an image for ground?
 
     def update(self,dt):
         """Updates background with grass tufts"""
@@ -267,13 +262,13 @@ class NinjaModel:
         self.height = SCREEN_H
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        self.platform = Platform(40,40)
-        self.block_group = pygame.sprite.Group(self.platform)
+        self.platform = Platform(SCREEN_W/2, SCREEN_H - 40 + 4, 40,40)
+        ground = Platform(0, SCREEN_H - 4, SCREEN_W, 1000, 0)
+        self.platforms = pygame.sprite.Group(self.platform, ground)
         self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
-        self.platforms = [self.background.ground,self.platform]
 
     def update(self,dt):
         """Updates player and background"""
@@ -287,7 +282,7 @@ class NinjaModel:
 
     def get_drawables(self):
         """Return list of groups to draw"""
-        return [self.my_group, self.background.grass, self.block_group, self.projectiles]#, pygame.sprite.Group(self.background.ground)]
+        return [self.my_group, self.background.grass, self.platforms, self.projectiles]
 
 class NinjaController:
     """Controller for player"""
@@ -321,8 +316,6 @@ class NinjaController:
                     self.model.ninja_horiz = 0
                 elif k == self.model.ninja_jump:
                     self.model.ninja_jump = 0
-                    #if not self.model.my_sprite.on_ground:  # deal with case of releasing key while hitting ground
-                    #    self.model.my_sprite.jump_counter = self.model.my_sprite.max_jump + 1
         return (self.done,self.pause)
 
 class NinjaView:
@@ -341,14 +334,15 @@ class NinjaView:
     def draw(self):
         """Redraws game window, fetching drawables from model"""
         self.screen.fill(WHITE)
-        pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, self.height - 4, self.width, 4))   # This is the ground
 
-        pygame.draw.rect(self.screen, [255,0,0], self.model.my_sprite.feet)
         pygame.draw.rect(self.screen, [0, 255, 0], self.model.my_sprite.hitbox)
 
         drawables = self.model.get_drawables()
         for g in drawables:
             g.draw(self.screen)
+
+        pygame.draw.rect(self.screen, [255,0,0], self.model.my_sprite.feet)
+        
         pygame.display.flip()
 
     def draw_pause(self):
