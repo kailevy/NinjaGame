@@ -277,7 +277,7 @@ class NinjaModel:
 
     def update(self,dt):
         """Updates player and background"""
-        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump,self.platforms)
+        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platforms)
 
         self.projectiles.update(dt)
         for p in self.projectiles:
@@ -334,7 +334,7 @@ class NinjaView:
         self.screen = pygame.display.set_mode((self.width,self.height))
         self.model = model
         pygame.font.init()
-        self.font = pygame.font.Font('visitor2.ttf', 80)
+        self.font = pygame.font.Font(CURR_DIR + '/visitor2.ttf', 80)
         self.pause_surf = self.font.render("PRESS P!", False, WHITE)
         pygame.display.set_caption("NINJAs")
 
