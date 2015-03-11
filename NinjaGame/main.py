@@ -25,6 +25,8 @@ class Ninja(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
+        self.alive = True
+
         # Load the sprite sheet
         self.sheet = pygame.image.load(CURR_DIR + "/images/ninja_sheet.png")
         self.index = 0          # Index for choosing which sprite image
@@ -101,7 +103,7 @@ class Ninja(pygame.sprite.Sprite):
         self.move(self.x_vel*dt,self.y_vel*dt)
 
         self.collide(platforms)
-
+        
         # If enough time has passed, change index to use next image
         if self.dt_image > self.animation_speed and self.sprite_num == 0:
             self.index += 1
@@ -172,8 +174,10 @@ class Platform(pygame.sprite.Sprite):
 
 class Shuriken(pygame.sprite.Sprite):
     """Shuriken class"""
-    def __init__(self, x_pos):
+    def __init__(self, x_pos,model):
         pygame.sprite.Sprite.__init__(self)
+
+        self.model = model
 
         # Load the sprite sheet
         self.sheet = pygame.image.load(CURR_DIR + "/images/shuriken_sheet.png")
@@ -212,7 +216,14 @@ class Shuriken(pygame.sprite.Sprite):
 
     def collide(self, platforms):
         for p in platforms:
-            if self.rect.colliderect(p):
+            if type(p) is Ninja:
+                if self.rect.colliderect(p.hitbox) and not self.on_ground:
+                    p.alive = False
+                elif self.rect.colliderect(p.hitbox) and self.on_ground:
+                    self.model.score += 50
+                    self.kill()
+
+            elif self.rect.colliderect(p):
                 if self.index == 0:
                     self.rect.bottom = p.rect.top + 7
                 elif self.index == 1 or self.index == 2:
@@ -272,7 +283,7 @@ class NinjaModel:
         self.my_group = pygame.sprite.Group(self.my_sprite)
         self.platform = Platform(40,40)
         self.block_group = pygame.sprite.Group(self.platform)
-        self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
+        self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self))
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
@@ -285,6 +296,7 @@ class NinjaModel:
         self.projectiles.update(dt)
         for p in self.projectiles:
             p.collide(self.platforms)
+            p.collide(self.my_group)
         self.background.update(dt)
         self.platform.update(dt)
         self.score_dt += dt
