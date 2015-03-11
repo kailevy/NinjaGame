@@ -154,8 +154,8 @@ class Ninja(pygame.sprite.Sprite):
 
 
 
-class Block(pygame.sprite.Sprite):
-    """Class for blocks that come at the Ninja"""
+class Platform(pygame.sprite.Sprite):
+    """Class for platforms that come at the Ninja"""
     def __init__(self,width,height):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([width,height])
@@ -167,7 +167,7 @@ class Block(pygame.sprite.Sprite):
         self.rect.y = SCREEN_H - height + 4
 
     def update(self, dt):
-        """Move the blocks"""
+        """Move the platforms"""
         self.rect = self.rect.move(-self.speed*dt,0)
 
 class Shuriken(pygame.sprite.Sprite):
@@ -267,13 +267,13 @@ class NinjaModel:
         self.height = SCREEN_H
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        self.block = Block(40,40)
-        self.block_group = pygame.sprite.Group(self.block)
+        self.platform = Platform(40,40)
+        self.block_group = pygame.sprite.Group(self.platform)
         self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
-        self.platforms = [self.background.ground,self.block]
+        self.platforms = [self.background.ground,self.platform]
 
     def update(self,dt):
         """Updates player and background"""
@@ -284,7 +284,7 @@ class NinjaModel:
         for p in self.projectiles:
             p.collide(self.platforms)
         self.background.update(dt)
-        self.block.update(dt)
+        self.platform.update(dt)
 
     def get_drawables(self):
         """Return list of groups to draw"""
