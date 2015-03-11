@@ -17,7 +17,6 @@ SCREEN_W = 1024
 SCREEN_H = 768
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
-
 MAX_GRASS = int(0.013 * SCREEN_W)
 
 class Ninja(pygame.sprite.Sprite):
@@ -152,8 +151,6 @@ class Ninja(pygame.sprite.Sprite):
         self.rect.left = self.hitbox.left - 16
         self.rect.top = self.hitbox.top - 16
 
-
-
 class Platform(pygame.sprite.Sprite):
     """Class for platforms that come at the Ninja"""
     def __init__(self,x,y,width,height,speed=354):
@@ -253,7 +250,6 @@ class Background():
                 g.kill()
                 self.num_grass -= 1
         self.grass.update(dt)
-
 
 class NinjaModel:
     """Model for game"""
@@ -405,10 +401,7 @@ class NinjaMain:
                 self.model.update(dt)
                 self.view.draw()
 
-                self.clock.tick(60)
-
-            
-                    
+                self.clock.tick(60)            
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
