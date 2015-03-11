@@ -276,15 +276,21 @@ class NinjaModel:
     def __init__(self):
         self.width = SCREEN_W
         self.height = SCREEN_H
+
         self.score = 0
         self.score_dt = 0
         self.score_speed = 0.5
+
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
+
+        self.alive = self.my_sprite.alive
+
         self.platform = Platform(40,40)
         self.block_group = pygame.sprite.Group(self.platform)
         self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self))
         self.background = Background()
+
         self.ninja_horiz = 0
         self.ninja_jump = 0
         self.platforms = [self.background.ground,self.platform]
@@ -300,6 +306,8 @@ class NinjaModel:
         self.background.update(dt)
         self.platform.update(dt)
         self.score_dt += dt
+
+        self.alive  = self.my_sprite.alive
 
         if self.score_dt >= self.score_speed:
             self.update_score()
@@ -357,8 +365,10 @@ class NinjaView:
         self.screen = pygame.display.set_mode((self.width,self.height))
         self.model = model
         pygame.font.init()
+
         self.font = pygame.font.Font(CURR_DIR + '/visitor2.ttf', 80)
         self.pause_surf = self.font.render("PRESS P!", False, WHITE)
+        self.game_over_surf = self.font.render("GAME OVER", False, BLACK)
         pygame.display.set_caption("NINJAs")
 
     def draw(self):
@@ -383,6 +393,10 @@ class NinjaView:
     def draw_score(self):
         self.score_surf = self.font.render(str(self.model.score), False, BLACK)
         self.screen.blit(self.score_surf, (20,20))
+
+    def draw_game_over(self):
+        self.screen.blit(self.game_over_surf,(300,500))
+        pygame.display.flip()
 
 class NinjaMain:
     """Main class"""
@@ -413,7 +427,7 @@ class NinjaMain:
                             self.model.ninja_horiz = 0
                     elif event.type == pygame.QUIT:
                         done = True 
-            else:
+            elif self.model.alive:
                 t = pygame.time.get_ticks()
                 # delta time in seconds.
                 dt = (t - lastGetTicks) / 1000.0
@@ -424,6 +438,7 @@ class NinjaMain:
                 self.view.draw()
 
                 self.clock.tick(60)
+            else: self.view.draw_game_over()
 
             
                     
