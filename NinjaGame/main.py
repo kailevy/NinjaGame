@@ -10,6 +10,8 @@ import pygame
 import os
 import random
 
+FRAMERATE = 30
+
 # Colors
 BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
@@ -24,6 +26,10 @@ BUILDING1 = 1
 BUILDING2 = 2
 
 GROUNDSPEED = 354
+
+BUILDINGS = [pygame.image.load(CURR_DIR + "/images/building1.png"), pygame.image.load(CURR_DIR + "/images/building2.png")]
+
+
 
 class Ninja(pygame.sprite.Sprite):
     def __init__(self):
@@ -49,8 +55,8 @@ class Ninja(pygame.sprite.Sprite):
         self.y_pos = SCREEN_H - self.height + 4
 
         self.speed = 412
-        self.min_jump = 4
-        self.max_jump = 6
+        self.min_jump = int(FRAMERATE/15)
+        self.max_jump = int(FRAMERATE/10)
 
         # Rectangle object for positioning
         self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height-8)  # 8 extra pixels on bottom of sprite
@@ -80,14 +86,14 @@ class Ninja(pygame.sprite.Sprite):
         self.dt_image += dt
 
         if ninja_jump and self.jump_counter < self.max_jump:# and self.on_ground:
-            self.y_vel += -248
+            self.y_vel += -248*60/FRAMERATE
             self.jump_counter += 1
             self.on_ground = False
             self.sprite_num = 2
             self.index = 1
             #print "\t\tJUMP"
         elif self.jump_counter > 0 and self.jump_counter < self.min_jump:
-            self.y_vel += -248
+            self.y_vel += -248*60/FRAMERATE
             self.jump_counter += 1
         elif self.jump_counter > 0:
             self.jump_counter = self.max_jump
@@ -97,7 +103,7 @@ class Ninja(pygame.sprite.Sprite):
 
         # Fall if in air
         if not self.on_ground:
-            self.y_vel += 57
+            self.y_vel += 57*60/FRAMERATE
             #print "\tIN AIR"
         #else:
             #print "ON GROUND"
@@ -168,7 +174,7 @@ class Platform(pygame.sprite.Sprite):
             self.speed = 0
             self.safebox = self.rect
         else:
-            self.image = pygame.image.load(CURR_DIR + "/images/building%d.png"%style)
+            self.image = BUILDINGS[style-1]
             self.speed = GROUNDSPEED
             self.rect = self.image.get_rect()
             self.rect.x = x
@@ -275,13 +281,14 @@ class NinjaModel:
         self.score_speed = 0.5
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        self.platform = Platform(SCREEN_W, BUILDING2, 1)
+        #self.platform = Platform(SCREEN_W, BUILDING2, 1)
         ground = Platform(0, GROUND)
-        self.platforms = pygame.sprite.Group(self.platform, ground)
+        self.platforms = pygame.sprite.Group(Platform(SCREEN_W, BUILDING2, 1), ground)
         self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
+        self.release_platform = True
 
     def update(self,dt):
         """Updates player and background"""
@@ -291,12 +298,31 @@ class NinjaModel:
         for p in self.projectiles:
             p.collide(self.platforms)
         self.background.update(dt)
-        self.platform.update(dt)
+
+        self.release_platform = True
+        for p in self.platforms:        # Remove any platforms no longer on the screen from the group
+            if p.rect.height < 1000:    # Do not check ground
+                if p.rect.right < 0:
+                    p.kill()
+                elif p.safebox.right - SCREEN_W > 0 and p.safebox.right - SCREEN_W < 20:
+                    rand = random.random()
+                    if rand > 0:
+                        Platform(SCREEN_W-12 + (p.safebox.right-SCREEN_W),BUILDING1,1).add(self.platforms)
+
+                if p.rect.right > SCREEN_W - 120:
+                    self.release_platform = False
+
+        if self.release_platform:
+            Platform(SCREEN_W,BUILDING1,1).add(self.platforms)
+
+        self.platforms.update(dt)
         self.score_dt += dt
 
         if self.score_dt >= self.score_speed:
             self.update_score()
             self.score_dt = 0
+
+        print dt
 
     def update_score(self):
         self.score += 10 
@@ -415,7 +441,7 @@ class NinjaMain:
                 self.model.update(dt)
                 self.view.draw()
 
-                self.clock.tick(60)            
+                self.clock.tick(FRAMERATE)            
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
