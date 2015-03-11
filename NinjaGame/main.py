@@ -356,7 +356,6 @@ class NinjaView:
         self.screen.fill(BLACK)
         self.screen.blit(self.pause_surf,(380,400))
         pygame.display.flip()
-        return pygame.time.delay(10)
 
 class NinjaMain:
     """Main class"""
@@ -377,11 +376,12 @@ class NinjaMain:
 
         while not done:
             if pause:
-                lastGetTicks += self.view.draw_pause()
+                self.view.draw_pause()
                 for event in pygame.event.get():
                     if event.type == pygame.KEYUP:
                         if event.key == pygame.K_p:
                             pause = False
+                            lastGetTicks = pygame.time.get_ticks()
                     elif event.type == pygame.QUIT:
                         done = True 
             else:
