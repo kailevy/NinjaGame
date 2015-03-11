@@ -280,7 +280,6 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump,self.platforms)
 
         self.projectiles.update(dt)
-        self.my_sprite.collide(self.platforms)
         for p in self.projectiles:
             p.collide(self.platforms)
         self.background.update(dt)
@@ -382,6 +381,8 @@ class NinjaMain:
                         if event.key == pygame.K_p:
                             pause = False
                             lastGetTicks = pygame.time.get_ticks()
+                            self.model.ninja_jump = 0
+                            self.model.ninja_horiz = 0
                     elif event.type == pygame.QUIT:
                         done = True 
             else:
