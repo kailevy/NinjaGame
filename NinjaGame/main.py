@@ -130,20 +130,20 @@ class Ninja(pygame.sprite.Sprite):
         walking = False
         for p in platforms:
             self.correct_boxes()    
-            if self.feet.colliderect(p) and not self.on_ground:
+            if self.feet.colliderect(p.safebox) and not self.on_ground:
                 self.hitbox.bottom = p.rect.top - 10
                 self.on_ground = True
                 self.y_vel = 0
                 self.sprite_num = 0
                 self.index = 0
                 self.jump_counter = 0
-            if self.feet.colliderect(p):
+            if self.feet.colliderect(p.safebox):
                 walking = True
-            if self.hitbox.colliderect(p):
-                if self.hitbox.left < p.rect.left:
-                    self.hitbox.right = p.rect.left
-                elif self.hitbox.right > p.rect.right:
-                    self.hitbox.left = p.rect.right
+            if self.hitbox.colliderect(p.safebox):
+                if self.hitbox.left < p.safebox.left:
+                    self.hitbox.right = p.safebox.left
+                elif self.hitbox.right > p.safebox.right:
+                    self.hitbox.left = p.safebox.right
             self.correct_boxes()
 
         if not walking:
@@ -166,16 +166,20 @@ class Platform(pygame.sprite.Sprite):
             self.rect.x = x
             self.rect.y = SCREEN_H - 4
             self.speed = 0
+            self.safebox = self.rect
         else:
             self.image = pygame.image.load(CURR_DIR + "/images/building%d.png"%style)
             self.speed = GROUNDSPEED
             self.rect = self.image.get_rect()
             self.rect.x = x
             self.rect.y = SCREEN_H - story*self.rect.height - 4
+            self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)
 
     def update(self, dt):
         """Move the platforms"""
         self.rect = self.rect.move(-self.speed*dt,0)
+        self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)
+
 
 class Shuriken(pygame.sprite.Sprite):
     """Shuriken class"""
@@ -219,11 +223,11 @@ class Shuriken(pygame.sprite.Sprite):
 
     def collide(self, platforms):
         for p in platforms:
-            if self.rect.colliderect(p):
+            if self.rect.colliderect(p.safebox):
                 if self.index == 0:
-                    self.rect.bottom = p.rect.top + 7
+                    self.rect.bottom = p.safebox.top + 7
                 elif self.index == 1 or self.index == 2:
-                    self.rect.bottom = p.rect.top + 5
+                    self.rect.bottom = p.safebox.top + 5
                 self.on_ground = True
                 self.y_vel = 0
                 
