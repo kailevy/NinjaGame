@@ -19,8 +19,13 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 MAX_GRASS = int(0.013 * SCREEN_W)
 
-class Ninja(pygame.sprite.Sprite):
+GROUND = 0
+BUILDING1 = 1
+BUILDING2 = 2
 
+GROUNDSPEED = 354
+
+class Ninja(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
@@ -144,7 +149,6 @@ class Ninja(pygame.sprite.Sprite):
         if not walking:
             self.on_ground = False
 
-
     def correct_boxes(self):
         self.feet.left = self.hitbox.left + 8
         self.feet.top = self.hitbox.bottom + 10
@@ -152,16 +156,22 @@ class Ninja(pygame.sprite.Sprite):
         self.rect.top = self.hitbox.top - 16
 
 class Platform(pygame.sprite.Sprite):
-    """Class for platforms that come at the Ninja"""
-    def __init__(self,x,y,width,height,speed=354):
+    """Class for platforms that the Ninja can land on"""
+    def __init__(self,x,style,story=-1):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface([width,height])
-        self.image.fill(BLACK)
-        self.speed = speed
-
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        if style == GROUND:
+            self.image = pygame.Surface([SCREEN_W, 1000])
+            self.image.fill(BLACK)
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = SCREEN_H - 4
+            self.speed = 0
+        else:
+            self.image = pygame.image.load(CURR_DIR + "/images/building%d.png"%style)
+            self.speed = GROUNDSPEED
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = SCREEN_H - story*self.rect.height - 4
 
     def update(self, dt):
         """Move the platforms"""
@@ -183,7 +193,7 @@ class Shuriken(pygame.sprite.Sprite):
         self.height = 42
 
         self.y_vel = 650
-        self.x_vel = 354
+        self.x_vel = GROUNDSPEED
         self.on_ground = False
 
         self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
@@ -226,7 +236,7 @@ class Grass(pygame.sprite.Sprite):
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.rect = pygame.Rect(SCREEN_W, SCREEN_H-self.height+3, self.width, self.height)
-        self.speed = 354
+        self.speed = GROUNDSPEED
 
     def update(self, dt):
         """Moves the grass"""
@@ -261,8 +271,8 @@ class NinjaModel:
         self.score_speed = 0.5
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        self.platform = Platform(SCREEN_W/2, SCREEN_H - 40 + 4, 40,40)
-        ground = Platform(0, SCREEN_H - 4, SCREEN_W, 1000, 0)
+        self.platform = Platform(SCREEN_W, BUILDING2, 1)
+        ground = Platform(0, GROUND)
         self.platforms = pygame.sprite.Group(self.platform, ground)
         self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
