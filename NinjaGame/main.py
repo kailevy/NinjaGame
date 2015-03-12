@@ -599,7 +599,7 @@ class NinjaMain:
                 done, self.pause = self.controller.process_events()
                 self.model.update(dt)
                 self.view.draw(self.model.alive)   # not game over
-                self.clock.tick(60)
+                self.clock.tick(FRAMERATE)
             else:
                 while self.model.my_sprite.rect.right > -50:
                     t = pygame.time.get_ticks()
@@ -610,6 +610,7 @@ class NinjaMain:
                     done, self.pause = self.controller.process_events()
                     self.model.update(dt)
                     self.view.draw(self.model.alive)
+                    self.clock.tick(FRAMERATE)
                 done = True 
                 if os.path.exists(CURR_DIR + '/hiscore.txt'):
                     count = pickle.load(open(CURR_DIR + '/hiscore.txt', 'rb'))
