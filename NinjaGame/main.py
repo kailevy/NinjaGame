@@ -10,6 +10,8 @@ import pygame
 import os
 import random
 
+FRAMERATE = 60
+
 # Colors
 BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
@@ -19,8 +21,17 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 MAX_GRASS = int(0.013 * SCREEN_W)
 
-class Ninja(pygame.sprite.Sprite):
+GROUND = 0
+BUILDING1 = 1
+BUILDING2 = 2
 
+GROUNDSPEED = 354
+
+BUILDINGS = [pygame.image.load(CURR_DIR + "/images/building1.png"), pygame.image.load(CURR_DIR + "/images/building2.png")]
+
+
+
+class Ninja(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
@@ -44,8 +55,8 @@ class Ninja(pygame.sprite.Sprite):
         self.y_pos = SCREEN_H - self.height + 4
 
         self.speed = 412
-        self.min_jump = 4
-        self.max_jump = 6
+        self.min_jump = int(FRAMERATE/15)
+        self.max_jump = int(FRAMERATE/10)
 
         # Rectangle object for positioning
         self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height-8)  # 8 extra pixels on bottom of sprite
@@ -75,14 +86,14 @@ class Ninja(pygame.sprite.Sprite):
         self.dt_image += dt
 
         if ninja_jump and self.jump_counter < self.max_jump:# and self.on_ground:
-            self.y_vel += -248
+            self.y_vel += -248*60/FRAMERATE
             self.jump_counter += 1
             self.on_ground = False
             self.sprite_num = 2
             self.index = 1
             #print "\t\tJUMP"
         elif self.jump_counter > 0 and self.jump_counter < self.min_jump:
-            self.y_vel += -248
+            self.y_vel += -248*60/FRAMERATE
             self.jump_counter += 1
         elif self.jump_counter > 0:
             self.jump_counter = self.max_jump
@@ -92,7 +103,7 @@ class Ninja(pygame.sprite.Sprite):
 
         # Fall if in air
         if not self.on_ground:
-            self.y_vel += 57
+            self.y_vel += 57*60/FRAMERATE
             #print "\tIN AIR"
         #else:
             #print "ON GROUND"
@@ -125,25 +136,24 @@ class Ninja(pygame.sprite.Sprite):
         walking = False
         for p in platforms:
             self.correct_boxes()    
-            if self.feet.colliderect(p) and not self.on_ground:
+            if self.feet.colliderect(p.safebox) and not self.on_ground:
                 self.hitbox.bottom = p.rect.top - 10
                 self.on_ground = True
                 self.y_vel = 0
                 self.sprite_num = 0
                 self.index = 0
                 self.jump_counter = 0
-            if self.feet.colliderect(p):
+            if self.feet.colliderect(p.safebox):
                 walking = True
-            if self.hitbox.colliderect(p):
-                if self.hitbox.left < p.rect.left:
-                    self.hitbox.right = p.rect.left
-                elif self.hitbox.right > p.rect.right:
-                    self.hitbox.left = p.rect.right
+            if self.hitbox.colliderect(p.safebox):
+                if self.hitbox.left < p.safebox.left:
+                    self.hitbox.right = p.safebox.left
+                elif self.hitbox.right > p.safebox.right:
+                    self.hitbox.left = p.safebox.right
             self.correct_boxes()
 
         if not walking:
             self.on_ground = False
-
 
     def correct_boxes(self):
         self.feet.left = self.hitbox.left + 8
@@ -152,20 +162,30 @@ class Ninja(pygame.sprite.Sprite):
         self.rect.top = self.hitbox.top - 16
 
 class Platform(pygame.sprite.Sprite):
-    """Class for platforms that come at the Ninja"""
-    def __init__(self,x,y,width,height,speed=354):
+    """Class for platforms that the Ninja can land on"""
+    def __init__(self,x,style,story=-1):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface([width,height])
-        self.image.fill(BLACK)
-        self.speed = speed
-
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        if style == GROUND:
+            self.image = pygame.Surface([SCREEN_W, 1000])
+            self.image.fill(BLACK)
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = SCREEN_H - 4
+            self.speed = 0
+            self.safebox = self.rect
+        else:
+            self.image = BUILDINGS[style-1]
+            self.speed = GROUNDSPEED
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = SCREEN_H - story*self.rect.height - 4
+            self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)
 
     def update(self, dt):
         """Move the platforms"""
         self.rect = self.rect.move(-self.speed*dt,0)
+        self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)
+
 
 class Shuriken(pygame.sprite.Sprite):
     """Shuriken class"""
@@ -183,7 +203,7 @@ class Shuriken(pygame.sprite.Sprite):
         self.height = 42
 
         self.y_vel = 650
-        self.x_vel = 354
+        self.x_vel = GROUNDSPEED
         self.on_ground = False
 
         self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
@@ -209,11 +229,11 @@ class Shuriken(pygame.sprite.Sprite):
 
     def collide(self, platforms):
         for p in platforms:
-            if self.rect.colliderect(p):
+            if self.rect.colliderect(p.safebox):
                 if self.index == 0:
-                    self.rect.bottom = p.rect.top + 7
+                    self.rect.bottom = p.safebox.top + 7
                 elif self.index == 1 or self.index == 2:
-                    self.rect.bottom = p.rect.top + 5
+                    self.rect.bottom = p.safebox.top + 5
                 self.on_ground = True
                 self.y_vel = 0
                 
@@ -226,7 +246,7 @@ class Grass(pygame.sprite.Sprite):
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.rect = pygame.Rect(SCREEN_W, SCREEN_H-self.height+3, self.width, self.height)
-        self.speed = 354
+        self.speed = GROUNDSPEED
 
     def update(self, dt):
         """Moves the grass"""
@@ -251,6 +271,51 @@ class Background():
                 self.num_grass -= 1
         self.grass.update(dt)
 
+class PlatformHandler():
+    """Class to handle the platforms"""
+    def __init__(self):
+        ground = Platform(0, GROUND)
+        self.platforms = pygame.sprite.Group(ground)
+        self.release_platform = True
+        self.append_platform = True
+        self.num_platforms = 0
+        self.max_stories = 2
+
+    def update(self,dt):
+        self.release_platform = True
+        for p in self.platforms:        # Remove any platforms no longer on the screen from the group
+            p.update(dt)
+            if p.rect.height < 1000:    # Do not check ground
+                if p.rect.right < 0:
+                    p.kill()
+                elif p.safebox.right - SCREEN_W > 0 and p.safebox.right - SCREEN_W < 10 and self.append_platform:
+                    rand = random.random()
+                    if rand > 0.75:
+                        rand = random.random()
+                        if rand < 0.5:
+                            Platform(SCREEN_W-12 + (p.safebox.right-SCREEN_W),BUILDING1,1).add(self.platforms)
+                        else:
+                            Platform(SCREEN_W-12 + (p.safebox.right-SCREEN_W),BUILDING2,1).add(self.platforms)
+                        self.append_platform = False
+                elif p.safebox.right - SCREEN_W < 0 and SCREEN_W - p.safebox.right < 10:
+                    self.append_platform = True
+
+                if p.rect.right > SCREEN_W - 40:
+                    self.release_platform = False
+
+        if self.release_platform:
+            rand = random.random()
+            if rand > 0.995:
+                rand = random.random()
+                if rand < 0.5:
+                    Platform(SCREEN_W,BUILDING1,1).add(self.platforms)
+                else:
+                    Platform(SCREEN_W,BUILDING2,1).add(self.platforms)
+
+
+        #print self.release_platform
+        print len(self.platforms)
+
 class NinjaModel:
     """Model for game"""
     def __init__(self):
@@ -261,9 +326,7 @@ class NinjaModel:
         self.score_speed = 0.5
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        self.platform = Platform(SCREEN_W/2, SCREEN_H - 40 + 4, 40,40)
-        ground = Platform(0, SCREEN_H - 4, SCREEN_W, 1000, 0)
-        self.platforms = pygame.sprite.Group(self.platform, ground)
+        self.platform_handler = PlatformHandler()
         self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
         self.ninja_horiz = 0
@@ -271,13 +334,14 @@ class NinjaModel:
 
     def update(self,dt):
         """Updates player and background"""
-        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platforms)
+        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platform_handler.platforms)
 
         self.projectiles.update(dt)
         for p in self.projectiles:
-            p.collide(self.platforms)
+            p.collide(self.platform_handler.platforms)
         self.background.update(dt)
-        self.platform.update(dt)
+
+        self.platform_handler.update(dt)
         self.score_dt += dt
 
         if self.score_dt >= self.score_speed:
@@ -289,7 +353,7 @@ class NinjaModel:
 
     def get_drawables(self):
         """Return list of groups to draw"""
-        return [self.my_group, self.background.grass, self.platforms, self.projectiles]
+        return [self.my_group, self.background.grass, self.platform_handler.platforms, self.projectiles]
 
 class NinjaController:
     """Controller for player"""
@@ -401,7 +465,7 @@ class NinjaMain:
                 self.model.update(dt)
                 self.view.draw()
 
-                self.clock.tick(60)            
+                self.clock.tick(FRAMERATE)            
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
