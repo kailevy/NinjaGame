@@ -10,7 +10,7 @@ import pygame
 import os
 import random
 
-FRAMERATE = 30
+FRAMERATE = 60
 
 # Colors
 BLACK    = (  0,   0,   0)
@@ -271,6 +271,51 @@ class Background():
                 self.num_grass -= 1
         self.grass.update(dt)
 
+class PlatformHandler():
+    """Class to handle the platforms"""
+    def __init__(self):
+        ground = Platform(0, GROUND)
+        self.platforms = pygame.sprite.Group(ground)
+        self.release_platform = True
+        self.append_platform = True
+        self.num_platforms = 0
+        self.max_stories = 2
+
+    def update(self,dt):
+        self.release_platform = True
+        for p in self.platforms:        # Remove any platforms no longer on the screen from the group
+            p.update(dt)
+            if p.rect.height < 1000:    # Do not check ground
+                if p.rect.right < 0:
+                    p.kill()
+                elif p.safebox.right - SCREEN_W > 0 and p.safebox.right - SCREEN_W < 10 and self.append_platform:
+                    rand = random.random()
+                    if rand > 0.75:
+                        rand = random.random()
+                        if rand < 0.5:
+                            Platform(SCREEN_W-12 + (p.safebox.right-SCREEN_W),BUILDING1,1).add(self.platforms)
+                        else:
+                            Platform(SCREEN_W-12 + (p.safebox.right-SCREEN_W),BUILDING2,1).add(self.platforms)
+                        self.append_platform = False
+                elif p.safebox.right - SCREEN_W < 0 and SCREEN_W - p.safebox.right < 10:
+                    self.append_platform = True
+
+                if p.rect.right > SCREEN_W - 40:
+                    self.release_platform = False
+
+        if self.release_platform:
+            rand = random.random()
+            if rand > 0.995:
+                rand = random.random()
+                if rand < 0.5:
+                    Platform(SCREEN_W,BUILDING1,1).add(self.platforms)
+                else:
+                    Platform(SCREEN_W,BUILDING2,1).add(self.platforms)
+
+
+        #print self.release_platform
+        print len(self.platforms)
+
 class NinjaModel:
     """Model for game"""
     def __init__(self):
@@ -281,55 +326,34 @@ class NinjaModel:
         self.score_speed = 0.5
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
-        #self.platform = Platform(SCREEN_W, BUILDING2, 1)
-        ground = Platform(0, GROUND)
-        self.platforms = pygame.sprite.Group(Platform(SCREEN_W, BUILDING2, 1), ground)
+        self.platform_handler = PlatformHandler()
         self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
         self.background = Background()
         self.ninja_horiz = 0
         self.ninja_jump = 0
-        self.release_platform = True
 
     def update(self,dt):
         """Updates player and background"""
-        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platforms)
+        self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platform_handler.platforms)
 
         self.projectiles.update(dt)
         for p in self.projectiles:
-            p.collide(self.platforms)
+            p.collide(self.platform_handler.platforms)
         self.background.update(dt)
 
-        self.release_platform = True
-        for p in self.platforms:        # Remove any platforms no longer on the screen from the group
-            if p.rect.height < 1000:    # Do not check ground
-                if p.rect.right < 0:
-                    p.kill()
-                elif p.safebox.right - SCREEN_W > 0 and p.safebox.right - SCREEN_W < 20:
-                    rand = random.random()
-                    if rand > 0:
-                        Platform(SCREEN_W-12 + (p.safebox.right-SCREEN_W),BUILDING1,1).add(self.platforms)
-
-                if p.rect.right > SCREEN_W - 120:
-                    self.release_platform = False
-
-        if self.release_platform:
-            Platform(SCREEN_W,BUILDING1,1).add(self.platforms)
-
-        self.platforms.update(dt)
+        self.platform_handler.update(dt)
         self.score_dt += dt
 
         if self.score_dt >= self.score_speed:
             self.update_score()
             self.score_dt = 0
 
-        print dt
-
     def update_score(self):
         self.score += 10 
 
     def get_drawables(self):
         """Return list of groups to draw"""
-        return [self.my_group, self.background.grass, self.platforms, self.projectiles]
+        return [self.my_group, self.background.grass, self.platform_handler.platforms, self.projectiles]
 
 class NinjaController:
     """Controller for player"""
