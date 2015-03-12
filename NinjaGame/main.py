@@ -215,9 +215,12 @@ class Shuriken(pygame.sprite.Sprite):
             if type(p) is Ninja:
                 if self.rect.colliderect(p.hitbox) and not self.on_ground:
                     p.alive = False
+                    return 0
                 elif self.rect.colliderect(p.hitbox) and self.on_ground:
                     self.model.score += 100
                     self.kill()
+                    return 1
+                else: return 0
 
             elif self.rect.colliderect(p):
                 if self.index == 0:
@@ -261,6 +264,29 @@ class Background():
                 self.num_grass -= 1
         self.grass.update(dt)
 
+class Projectiles():
+    """Represents all the shurikens"""
+    def __init__(self,model):
+        self.model = model
+        self.shurikens = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model))
+        self.num_shurikens = 1
+
+    def update(self,dt,platforms,my_group):
+        """Adds shurikens"""
+        num_gone = 0
+        for p in self.shurikens:
+            p.collide(platforms)
+            num_gone += p.collide(my_group)
+        self.num_shurikens -= num_gone 
+        if self.num_shurikens < 1:
+            rand = random.random()
+            if rand < dt * 4:
+                Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model).add(self.shurikens)
+                self.num_shurikens += 1
+
+        self.shurikens.update(dt)
+
+
 class NinjaModel:
     """Model for game"""
     def __init__(self):
@@ -269,14 +295,15 @@ class NinjaModel:
 
         self.score = 0
         self.score_dt = 0
-        self.score_speed = 0.5
+        self.score_speed = 0.5      # 10 pts every half second
 
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
 
         self.alive = self.my_sprite.alive
 
-        self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self))
+        # self.projectiles = pygame.sprite.Groupy(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self))
+        self.projectiles = Projectiles(self)
         self.platform = Platform(SCREEN_W/2, SCREEN_H - 40 + 4, 40,40)
         ground = Platform(0, SCREEN_H - 4, SCREEN_W, 1000, 0)
         self.platforms = pygame.sprite.Group(self.platform, ground)
@@ -291,10 +318,10 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platforms)
 
         # update and collide projectiles
-        self.projectiles.update(dt)
-        for p in self.projectiles:
-            p.collide(self.platforms)
-            p.collide(self.my_group)
+        self.projectiles.update(dt,self.platforms,self.my_group)
+        # for p in self.projectiles.shurikens:
+        #     p.collide(self.platforms)
+        #     p.collide(self.my_group)
         self.background.update(dt)
         self.platform.update(dt)
         self.score_dt += dt
@@ -311,7 +338,7 @@ class NinjaModel:
 
     def get_drawables(self):
         """Return list of groups to draw"""
-        return [self.my_group, self.background.grass, self.platforms, self.projectiles]
+        return [self.my_group, self.background.grass, self.platforms, self.projectiles.shurikens]
 
 class NinjaController:
     """Controller for player"""
