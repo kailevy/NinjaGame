@@ -184,7 +184,7 @@ class Shuriken(pygame.sprite.Sprite):
 
         # Velocities for updating position
         self.y_vel = 650
-        self.x_vel = 354
+        self.x_vel = 354 * (random.random() * 4 - 2)
         self.on_ground = False
 
         self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
@@ -206,7 +206,7 @@ class Shuriken(pygame.sprite.Sprite):
                 self.dt_image = 0
                 self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
                 self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
-
+        else: self.x_vel = 354
         self.rect = self.rect.move(-self.x_vel*dt, self.y_vel*dt)
 
     def collide(self, collideable):
@@ -271,21 +271,23 @@ class Projectiles():
         self.shurikens = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model))
         self.num_shurikens = 1
 
-    def update(self,dt,platforms,my_group):
+    def update(self,dt,platforms,my_group,max_num):
         """Adds shurikens"""
         num_gone = 0
+        self.shurikens.update(dt)
         for p in self.shurikens:
             p.collide(platforms)
             num_gone += p.collide(my_group)
+        for p in self.shurikens:
+            if p.rect.right < 0 or p.rect.left > SCREEN_W:
+                p.kill()
+                self.num_shurikens -= 1
         self.num_shurikens -= num_gone 
-        if self.num_shurikens < 1:
+        if self.num_shurikens < max_num:
             rand = random.random()
             if rand < dt * 4:
                 Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model).add(self.shurikens)
                 self.num_shurikens += 1
-
-        self.shurikens.update(dt)
-
 
 class NinjaModel:
     """Model for game"""
@@ -318,7 +320,7 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platforms)
 
         # update and collide projectiles
-        self.projectiles.update(dt,self.platforms,self.my_group)
+        self.projectiles.update(dt,self.platforms,self.my_group,1)
         # for p in self.projectiles.shurikens:
         #     p.collide(self.platforms)
         #     p.collide(self.my_group)
