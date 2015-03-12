@@ -327,6 +327,7 @@ class PlatformHandler():
         self.max_stories = 2
 
     def update(self,dt):
+        """Updates all platforms, generates more and removes obsolete ones"""
         self.release_platform = True
         for p in self.platforms:        # Remove any platforms no longer on the screen from the group
             p.update(dt)
@@ -491,6 +492,7 @@ class NinjaView:
         self.screen.blit(self.score_surf, (20,20))
 
     def draw_start(self):
+        """Draws screen for startup"""
         self.draw()
         self.screen.blit(self.instructions_surf, (70, 90))
         self.screen.blit(self.startup_surf, (100, 200))
@@ -523,6 +525,7 @@ class NinjaMain:
         self.pause = False
 
     def startup(self):
+        """Displays startup window and waits for user"""
         start = False
         self.view.draw_start()
         while not start:
