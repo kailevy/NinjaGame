@@ -20,11 +20,11 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 MAX_GRASS = int(0.013 * SCREEN_W)
 
 class Ninja(pygame.sprite.Sprite):
-
+    """Class for the Ninja, which represents the player"""
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
-        self.alive = True
+        self.alive = True       #if false, game ends
 
         # Load the sprite sheet
         self.sheet = pygame.image.load(CURR_DIR + "/images/ninja_sheet.png")
@@ -37,14 +37,17 @@ class Ninja(pygame.sprite.Sprite):
         self.width = 88
         self.height = 88
 
+        # Parameters for movement in window
         self.y_vel = 0
         self.x_vel = 0
         self.on_ground = True
         self.jump_counter = 0
 
+        # Starting position
         self.x_pos = SCREEN_W / 2 - self.width / 2
         self.y_pos = SCREEN_H - self.height + 4
 
+        # Defines ninja's speed and jump parameters
         self.speed = 412
         self.min_jump = 4
         self.max_jump = 6
@@ -54,14 +57,26 @@ class Ninja(pygame.sprite.Sprite):
         self.hitbox = pygame.Rect(self.rect.x + 16, self.rect.y + 16, self.width - 32, self.height - 34)
         self.feet = pygame.Rect(self.x_pos + 24, self.y_pos + self.height - 8, 40, 2)
 
-        self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num * self.height, self.width, self.height)) # Locate the sprite you want
+        # Locates the approprates sprite
+        self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num * self.height, self.width, self.height)) 
         self.image = self.sheet.subsurface(self.sheet.get_clip())
         self.index += 1
 
-    def jump(self):
-        self.y_vel = -1
+    def jump(self, ninja_jump):
+        if ninja_jump and self.jump_counter < self.max_jump:
+            self.y_vel += -248
+            self.jump_counter += 1
+            self.on_ground = False
+            self.sprite_num = 2
+            self.index = 1
+        elif self.jump_counter > 0 and self.jump_counter < self.min_jump:
+            self.y_vel += -248
+            self.jump_counter += 1
+        elif self.jump_counter > 0:
+            self.jump_counter = self.max_jump
 
     def move(self,x_vel,y_vel):
+        """Moves rectangles for drawing, feet, and hitbox"""
         self.rect = self.rect.move(x_vel,y_vel)
         self.feet = self.feet.move(x_vel,y_vel)
         self.hitbox = self.hitbox.move(x_vel,y_vel)
@@ -73,34 +88,21 @@ class Ninja(pygame.sprite.Sprite):
             self.animation_speed = 0.04
 
     def update(self, dt, ninja_horiz, ninja_jump,platforms):
+        """Updates the ninja, including collisions"""
         # Add passed time to time since last image change
         self.dt_image += dt
 
-        if ninja_jump and self.jump_counter < self.max_jump:# and self.on_ground:
-            self.y_vel += -248
-            self.jump_counter += 1
-            self.on_ground = False
-            self.sprite_num = 2
-            self.index = 1
-            #print "\t\tJUMP"
-        elif self.jump_counter > 0 and self.jump_counter < self.min_jump:
-            self.y_vel += -248
-            self.jump_counter += 1
-        elif self.jump_counter > 0:
-            self.jump_counter = self.max_jump
+        self.jump(ninja_jump)
 
+        # Update animation and speed based
         self.animation_speed = 0.04 - 0.02 * ninja_horiz
         self.x_vel = ninja_horiz * self.speed
 
         # Fall if in air
         if not self.on_ground:
             self.y_vel += 57
-            #print "\tIN AIR"
-        #else:
-            #print "ON GROUND"
 
         self.move(self.x_vel*dt,self.y_vel*dt)
-
         self.collide(platforms)
         
         # If enough time has passed, change index to use next image
@@ -115,15 +117,8 @@ class Ninja(pygame.sprite.Sprite):
             self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height))   # 2nd frame of walk is better jump image
             self.image = self.sheet.subsurface(self.sheet.get_clip())
 
-    def walk(self):
-        print 't'
-        self.sprite_num = 0
-        self.index = 0
-        self.jump_counter = 0
-        self.y_vel = 0
-        self.on_ground = True
-
     def collide(self, platforms):
+        """Checks for collisions with platforms"""
         walking = False
         for p in platforms:
             self.correct_boxes()    
@@ -148,6 +143,7 @@ class Ninja(pygame.sprite.Sprite):
 
 
     def correct_boxes(self):
+        """Corrects the rectangles during collisions based off of hitbox"""
         self.feet.left = self.hitbox.left + 8
         self.feet.top = self.hitbox.bottom + 10
         self.rect.left = self.hitbox.left - 16
@@ -197,6 +193,7 @@ class Shuriken(pygame.sprite.Sprite):
         self.index += 1
 
     def update(self, dt):
+        """Updates shuriken"""
         self.dt_image += dt
 
         if not self.on_ground:
@@ -211,8 +208,9 @@ class Shuriken(pygame.sprite.Sprite):
 
         self.rect = self.rect.move(-self.x_vel*dt, self.y_vel*dt)
 
-    def collide(self, platforms):
-        for p in platforms:
+    def collide(self, collideable):
+        """Collides with platforms and ninja"""
+        for p in collideable:
             if type(p) is Ninja:
                 if self.rect.colliderect(p.hitbox) and not self.on_ground:
                     p.alive = False
@@ -305,6 +303,7 @@ class NinjaModel:
             self.score_dt = 0
 
     def update_score(self):
+        """Adds 10 to score"""
         self.score += 10 
 
     def get_drawables(self):
@@ -376,15 +375,18 @@ class NinjaView:
         pygame.display.flip()
 
     def draw_pause(self):
+        """Draws pause menu"""
         self.screen.fill(BLACK)
         self.screen.blit(self.pause_surf,(380,400))
         pygame.display.flip()
 
     def draw_score(self):
+        """Draws score in corner"""
         self.score_surf = self.font.render(str(self.model.score), False, BLACK)
         self.screen.blit(self.score_surf, (20,20))
 
     def draw_game_over(self):
+        """Prints game over screen"""
         self.screen.blit(self.game_over_surf,(350,350))
         pygame.display.flip()
 
