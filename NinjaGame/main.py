@@ -229,6 +229,31 @@ class Shuriken(pygame.sprite.Sprite):
                     self.rect.bottom = p.rect.top + 5
                 self.on_ground = True
                 self.y_vel = 0
+
+class Projectiles():
+    """Represents all the shurikens"""
+    def __init__(self,model):
+        self.model = model
+        self.shurikens = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model))
+        self.num_shurikens = 1
+
+    def update(self,dt,platforms,my_group,max_num):
+        """Adds shurikens"""
+        num_gone = 0
+        self.shurikens.update(dt)
+        for p in self.shurikens:
+            p.collide(platforms)
+            num_gone += p.collide(my_group)
+        for p in self.shurikens:
+            if p.rect.right < 0 or p.rect.left > SCREEN_W:
+                p.kill()
+                self.num_shurikens -= 1
+        self.num_shurikens -= num_gone 
+        if self.num_shurikens < max_num:
+            rand = random.random()
+            if rand < dt * 4:
+                Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model).add(self.shurikens)
+                self.num_shurikens += 1
                 
 class Grass(pygame.sprite.Sprite):
     """Grass class"""
@@ -263,31 +288,6 @@ class Background():
                 g.kill()
                 self.num_grass -= 1
         self.grass.update(dt)
-
-class Projectiles():
-    """Represents all the shurikens"""
-    def __init__(self,model):
-        self.model = model
-        self.shurikens = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model))
-        self.num_shurikens = 1
-
-    def update(self,dt,platforms,my_group,max_num):
-        """Adds shurikens"""
-        num_gone = 0
-        self.shurikens.update(dt)
-        for p in self.shurikens:
-            p.collide(platforms)
-            num_gone += p.collide(my_group)
-        for p in self.shurikens:
-            if p.rect.right < 0 or p.rect.left > SCREEN_W:
-                p.kill()
-                self.num_shurikens -= 1
-        self.num_shurikens -= num_gone 
-        if self.num_shurikens < max_num:
-            rand = random.random()
-            if rand < dt * 4:
-                Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model).add(self.shurikens)
-                self.num_shurikens += 1
 
 class NinjaModel:
     """Model for game"""
