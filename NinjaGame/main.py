@@ -471,6 +471,8 @@ class NinjaView:
 
         self.font = pygame.font.Font(CURR_DIR + '/visitor2.ttf', 80)
         self.pause_surf = self.font.render("PRESS P!", False, BLACK)
+        self.objective_surf = self.font.render("COLLECT FALLEN SHURIKENS", False, BLACK)
+        self.objective_surf2 = self.font.render("BUT DON'T GET HIT!", False, BLACK)
         self.instructions_surf = self.font.render("MOVE WITH ARROWS OR WASD", False, BLACK)
         self.startup_surf = self.font.render("PRESS ANY KEY TO BEGIN", False, BLACK)
         self.startup_surf2 = self.font.render("PRESS P TO PAUSE", False, BLACK)
@@ -486,16 +488,16 @@ class NinjaView:
         """Redraws game window, fetching drawables from model"""
         self.screen.fill(WHITE)
 
-        pygame.draw.rect(self.screen, [0, 255, 0], self.model.my_sprite.hitbox)
+        # pygame.draw.rect(self.screen, [0, 255, 0], self.model.my_sprite.hitbox)
 
-        for p in self.model.platform_handler.platforms:
-            pygame.draw.rect(self.screen, [255,0,0],p.killbox1)
-            pygame.draw.rect(self.screen, [255,0,0],p.killbox2)
+        # for p in self.model.platform_handler.platforms:
+        #     pygame.draw.rect(self.screen, [255,0,0],p.killbox1)
+        #     pygame.draw.rect(self.screen, [255,0,0],p.killbox2)
         drawables = self.model.get_drawables()
         for g in drawables:
             g.draw(self.screen)
 
-        pygame.draw.rect(self.screen, [255,0,0], self.model.my_sprite.feet)
+        # pygame.draw.rect(self.screen, [255,0,0], self.model.my_sprite.feet)
 
         self.draw_score()
         pygame.display.flip()
@@ -516,6 +518,8 @@ class NinjaView:
     def draw_start(self):
         """Draws screen for startup"""
         self.draw()
+        self.screen.blit(self.objective_surf,(65,320))
+        self.screen.blit(self.objective_surf2,(180,380))
         self.screen.blit(self.instructions_surf, (70, 140))
         self.screen.blit(self.startup_surf, (100, 200))
         self.screen.blit(self.startup_surf2, (215, 260))
