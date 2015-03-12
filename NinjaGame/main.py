@@ -13,6 +13,7 @@ import random
 # Colors
 BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
+RED      = (255,   0,   0)
 SCREEN_W = 1024
 SCREEN_H = 768
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -245,7 +246,7 @@ class Projectiles():
             p.collide(platforms)
             num_gone += p.collide(my_group)
         for p in self.shurikens:
-            if p.rect.right < 0 or p.rect.left > SCREEN_W:
+            if p.rect.right < 0 or p.rect.left > (SCREEN_W + 400):
                 p.kill()
                 self.num_shurikens -= 1
         self.num_shurikens -= num_gone 
@@ -386,7 +387,9 @@ class NinjaView:
 
         self.font = pygame.font.Font(CURR_DIR + '/visitor2.ttf', 80)
         self.pause_surf = self.font.render("PRESS P!", False, WHITE)
-        self.game_over_surf = self.font.render("GAME OVER", False, BLACK)
+        self.instructions_surf = self.font.render("MOVE WITH ARROWS OR WASD", False, WHITE)
+        self.game_over_surf = self.font.render("GAME OVER", False, RED)
+        self.restart_surf = self.font.render("P TO RESTART", False, RED)
         pygame.display.set_caption("NINJAs")
 
     def draw(self):
@@ -407,7 +410,8 @@ class NinjaView:
     def draw_pause(self):
         """Draws pause menu"""
         self.screen.fill(BLACK)
-        self.screen.blit(self.pause_surf,(380,400))
+        self.screen.blit(self.pause_surf,(380,200))
+        self.screen.blit(self.instructions_surf, (70,90))
         pygame.display.flip()
 
     def draw_score(self):
@@ -415,9 +419,11 @@ class NinjaView:
         self.score_surf = self.font.render(str(self.model.score), False, BLACK)
         self.screen.blit(self.score_surf, (20,20))
 
+
     def draw_game_over(self):
         """Prints game over screen"""
         self.screen.blit(self.game_over_surf,(350,350))
+        self.screen.blit(self.restart_surf,(300,420))
         pygame.display.flip()
 
 class NinjaMain:
@@ -426,6 +432,12 @@ class NinjaMain:
     def __init__(self, width = SCREEN_W, height = SCREEN_H):
         self.width = width
         self.height = height
+        self.model = NinjaModel()
+        self.view = NinjaView(self.model)
+        self.controller = NinjaController(self.model)
+        self.clock = pygame.time.Clock()
+
+    def setup(self):
         self.model = NinjaModel()
         self.view = NinjaView(self.model)
         self.controller = NinjaController(self.model)
@@ -460,13 +472,25 @@ class NinjaMain:
                 self.view.draw()
                 self.clock.tick(60)
             else: 
-                self.view.draw_game_over()
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        done = True
+                done = True 
 
+def gameover(MainWindow):
+    """Allows player to restart"""
+    start = True
+    while start:
+        MainWindow.view.draw_game_over()
+        for event in pygame.event.get():
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_p:
+                    MainWindow.setup()
+                    MainWindow.MainLoop()
+            elif event.type == pygame.QUIT:
+                start = False
+                break
+                
 
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
-    MainWindow.MainLoop()
+    MainWindow.MainLoop()   
+    gameover(MainWindow)
