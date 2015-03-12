@@ -9,6 +9,7 @@ Created on Sun Mar 2 11:37 2015
 import pygame
 import os
 import random
+import pickle
 
 FRAMERATE = 60
 
@@ -247,7 +248,7 @@ class Projectiles():
         self.num_shurikens -= num_gone 
         if self.num_shurikens < max_num:
             rand = random.random()
-            if rand < dt * 2:
+            if rand < dt * 1.7:
                 Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model).add(self.shurikens)
                 self.num_shurikens += 1
                 
@@ -459,6 +460,10 @@ class NinjaView:
         self.startup_surf = self.font.render("PRESS ANY KEY TO BEGIN", False, BLACK)
         self.game_over_surf = self.font.render("GAME OVER", False, RED)
         self.restart_surf = self.font.render("PRESS ANY KEY TO RESTART", False, RED)
+        if os.path.exists(CURR_DIR + '/hiscore.txt'):
+            hiscore = str(pickle.load(open(CURR_DIR + '/hiscore.txt')))
+        else: hiscore = '0'
+        self.hiscore_surf = self.font.render("HI: " + hiscore, False, BLACK)
         pygame.display.set_caption("NINJAs")
 
     def draw(self):
@@ -489,12 +494,13 @@ class NinjaView:
     def draw_score(self):
         """Draws score in corner"""
         self.score_surf = self.font.render(str(self.model.score), False, BLACK)
-        self.screen.blit(self.score_surf, (20,20))
+        self.screen.blit(self.score_surf, (20,70))
+        self.screen.blit(self.hiscore_surf, (20,10))
 
     def draw_start(self):
         """Draws screen for startup"""
         self.draw()
-        self.screen.blit(self.instructions_surf, (70, 90))
+        self.screen.blit(self.instructions_surf, (70, 140))
         self.screen.blit(self.startup_surf, (100, 200))
         pygame.display.flip()
 
@@ -562,6 +568,13 @@ class NinjaMain:
                 self.clock.tick(60)
             else: 
                 done = True 
+                if os.path.exists(CURR_DIR + '/hiscore.txt'):
+                    count = pickle.load(open(CURR_DIR + '/hiscore.txt', 'rb'))
+                else: count = 0
+                if self.model.score > count:
+                    count = self.model.score
+                pickle.dump(count,open(CURR_DIR + '/hiscore.txt', 'wb'))    
+
 
 def gameover(MainWindow):
     """Allows player to restart"""
