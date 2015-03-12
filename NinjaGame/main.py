@@ -9,6 +9,7 @@ TO DO FOR TOMORROW:
 - potentially separate into separate files (not urgent)
 - potentially add way to stop stay-at-back exploitation
 - add more comments and documentation
+- potentially fine-tune difficulty parameters (speedboost, max shurikens) for good difficulty settings
 
 """
 
