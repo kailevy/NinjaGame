@@ -146,6 +146,8 @@ class Ninja(pygame.sprite.Sprite):
                     self.hitbox.right = p.safebox.left
                 elif self.hitbox.right > p.safebox.right:
                     self.hitbox.left = p.safebox.right
+            if self.hitbox.colliderect(p.killbox1) or self.hitbox.colliderect(p.killbox2):
+                self.alive = False
             self.correct_boxes()
 
         if not walking:
@@ -157,32 +159,6 @@ class Ninja(pygame.sprite.Sprite):
         self.feet.top = self.hitbox.bottom + 10
         self.rect.left = self.hitbox.left - 16
         self.rect.top = self.hitbox.top - 16
-
-class Platform(pygame.sprite.Sprite):
-    """Class for platforms that the Ninja can land on"""
-    def __init__(self,x,style,story=-1):
-        pygame.sprite.Sprite.__init__(self)
-        if style == GROUND:
-            self.image = pygame.Surface([SCREEN_W + 400, 1000])
-            self.image.fill(BLACK)
-            self.rect = self.image.get_rect()
-            self.rect.x = x
-            self.rect.y = SCREEN_H - 4
-            self.speed = 0
-            self.safebox = self.rect
-        else:
-            self.image = BUILDINGS[style-1]
-            self.speed = GROUNDSPEED
-            self.rect = self.image.get_rect()
-            self.rect.x = x
-            self.rect.y = SCREEN_H - story*self.rect.height - 4
-            self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)
-
-    def update(self, dt):
-        """Move the platforms"""
-        self.rect = self.rect.move(-self.speed*dt,0)
-        self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)
-
 
 class Shuriken(pygame.sprite.Sprite):
     """Shuriken class"""
@@ -307,6 +283,37 @@ class Background():
                 g.kill()
                 self.num_grass -= 1
         self.grass.update(dt)
+
+class Platform(pygame.sprite.Sprite):
+    """Class for platforms that the Ninja can land on"""
+    def __init__(self,x,style,story=-1):
+        pygame.sprite.Sprite.__init__(self)
+        if style == GROUND:
+            self.image = pygame.Surface([SCREEN_W + 400, 1000])
+            self.image.fill(BLACK)
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = SCREEN_H - 4
+            self.speed = 0
+            self.safebox = self.rect
+            self.killbox1 = pygame.Rect(0,0,0,0)
+            self.killbox2 = pygame.Rect(0,0,0,0)
+        else:
+            self.image = BUILDINGS[style-1]
+            self.speed = GROUNDSPEED
+            self.rect = self.image.get_rect()
+            self.rect.x = x
+            self.rect.y = SCREEN_H - story*self.rect.height - 4
+            self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)
+            self.killbox1 = pygame.Rect(self.rect.x + 4, self.rect.y + 6, 8, self.rect.height - 6)
+            self.killbox2 = pygame.Rect(self.rect.x + self.rect.width - 12, self.rect.y + 6, 7, self.rect.height - 6)
+
+    def update(self, dt):
+        """Move the platforms"""
+        self.rect = self.rect.move(-self.speed*dt,0)
+        self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)   
+        self.killbox1 = pygame.Rect(self.rect.x + 4, self.rect.y + 6, 8, self.rect.height - 6)
+        self.killbox2 = pygame.Rect(self.rect.x + self.rect.width - 12, self.rect.y + 6, 7, self.rect.height - 6)
 
 class PlatformHandler():
     """Class to handle the platforms"""
@@ -457,6 +464,9 @@ class NinjaView:
 
         pygame.draw.rect(self.screen, [0, 255, 0], self.model.my_sprite.hitbox)
 
+        for p in self.model.platform_handler.platforms:
+            pygame.draw.rect(self.screen, [255,0,0],p.killbox1)
+            pygame.draw.rect(self.screen, [255,0,0],p.killbox2)
         drawables = self.model.get_drawables()
         for g in drawables:
             g.draw(self.screen)
