@@ -25,6 +25,8 @@ class Ninja(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
+        self.alive = True
+
         # Load the sprite sheet
         self.sheet = pygame.image.load(CURR_DIR + "/images/ninja_sheet.png")
         self.index = 0          # Index for choosing which sprite image
@@ -101,7 +103,7 @@ class Ninja(pygame.sprite.Sprite):
         self.move(self.x_vel*dt,self.y_vel*dt)
 
         self.collide(platforms)
-
+        
         # If enough time has passed, change index to use next image
         if self.dt_image > self.animation_speed and self.sprite_num == 0:
             self.index += 1
@@ -172,8 +174,10 @@ class Platform(pygame.sprite.Sprite):
 
 class Shuriken(pygame.sprite.Sprite):
     """Shuriken class"""
-    def __init__(self, x_pos):
+    def __init__(self, x_pos,model):
         pygame.sprite.Sprite.__init__(self)
+
+        self.model = model
 
         # Load the sprite sheet
         self.sheet = pygame.image.load(CURR_DIR + "/images/shuriken_sheet.png")
@@ -212,7 +216,14 @@ class Shuriken(pygame.sprite.Sprite):
 
     def collide(self, platforms):
         for p in platforms:
-            if self.rect.colliderect(p):
+            if type(p) is Ninja:
+                if self.rect.colliderect(p.hitbox) and not self.on_ground:
+                    p.alive = False
+                elif self.rect.colliderect(p.hitbox) and self.on_ground:
+                    self.model.score += 100
+                    self.kill()
+
+            elif self.rect.colliderect(p):
                 if self.index == 0:
                     self.rect.bottom = p.rect.top + 7
                 elif self.index == 1 or self.index == 2:
@@ -265,15 +276,21 @@ class NinjaModel:
     def __init__(self):
         self.width = SCREEN_W
         self.height = SCREEN_H
+
         self.score = 0
         self.score_dt = 0
         self.score_speed = 0.5
+
         self.my_sprite = Ninja()
         self.my_group = pygame.sprite.Group(self.my_sprite)
+
+        self.alive = self.my_sprite.alive
+
         self.platform = Platform(40,40)
         self.block_group = pygame.sprite.Group(self.platform)
-        self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random()))
+        self.projectiles = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self))
         self.background = Background()
+
         self.ninja_horiz = 0
         self.ninja_jump = 0
         self.platforms = [self.background.ground,self.platform]
@@ -285,9 +302,12 @@ class NinjaModel:
         self.projectiles.update(dt)
         for p in self.projectiles:
             p.collide(self.platforms)
+            p.collide(self.my_group)
         self.background.update(dt)
         self.platform.update(dt)
         self.score_dt += dt
+
+        self.alive  = self.my_sprite.alive
 
         if self.score_dt >= self.score_speed:
             self.update_score()
@@ -345,8 +365,10 @@ class NinjaView:
         self.screen = pygame.display.set_mode((self.width,self.height))
         self.model = model
         pygame.font.init()
+
         self.font = pygame.font.Font(CURR_DIR + '/visitor2.ttf', 80)
         self.pause_surf = self.font.render("PRESS P!", False, WHITE)
+        self.game_over_surf = self.font.render("GAME OVER", False, BLACK)
         pygame.display.set_caption("NINJAs")
 
     def draw(self):
@@ -371,6 +393,10 @@ class NinjaView:
     def draw_score(self):
         self.score_surf = self.font.render(str(self.model.score), False, BLACK)
         self.screen.blit(self.score_surf, (20,20))
+
+    def draw_game_over(self):
+        self.screen.blit(self.game_over_surf,(350,350))
+        pygame.display.flip()
 
 class NinjaMain:
     """Main class"""
@@ -401,7 +427,7 @@ class NinjaMain:
                             self.model.ninja_horiz = 0
                     elif event.type == pygame.QUIT:
                         done = True 
-            else:
+            elif self.model.alive:
                 t = pygame.time.get_ticks()
                 # delta time in seconds.
                 dt = (t - lastGetTicks) / 1000.0
@@ -412,6 +438,12 @@ class NinjaMain:
                 self.view.draw()
 
                 self.clock.tick(60)
+            else: 
+                self.view.draw_game_over()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        done = True
+
 
             
                     
