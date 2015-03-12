@@ -16,6 +16,7 @@ FRAMERATE = 60
 BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
 RED      = (255,   0,   0)
+GRAY     = (128, 128, 128)
 SCREEN_W = 1024
 SCREEN_H = 768
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -452,10 +453,11 @@ class NinjaView:
         pygame.font.init()
 
         self.font = pygame.font.Font(CURR_DIR + '/visitor2.ttf', 80)
-        self.pause_surf = self.font.render("PRESS P!", False, WHITE)
-        self.instructions_surf = self.font.render("MOVE WITH ARROWS OR WASD", False, WHITE)
+        self.pause_surf = self.font.render("PRESS P!", False, BLACK)
+        self.instructions_surf = self.font.render("MOVE WITH ARROWS OR WASD", False, BLACK)
+        self.startup_surf = self.font.render("PRESS ANY KEY TO BEGIN", False, BLACK)
         self.game_over_surf = self.font.render("GAME OVER", False, RED)
-        self.restart_surf = self.font.render("P TO RESTART", False, RED)
+        self.restart_surf = self.font.render("PRESS ANY KEY TO RESTART", False, RED)
         pygame.display.set_caption("NINJAs")
 
     def draw(self):
@@ -478,7 +480,7 @@ class NinjaView:
 
     def draw_pause(self):
         """Draws pause menu"""
-        self.screen.fill(BLACK)
+        self.screen.fill(GRAY)
         self.screen.blit(self.pause_surf,(380,200))
         self.screen.blit(self.instructions_surf, (70,90))
         pygame.display.flip()
@@ -488,11 +490,16 @@ class NinjaView:
         self.score_surf = self.font.render(str(self.model.score), False, BLACK)
         self.screen.blit(self.score_surf, (20,20))
 
+    def draw_start(self):
+        self.draw()
+        self.screen.blit(self.instructions_surf, (70, 90))
+        self.screen.blit(self.startup_surf, (100, 200))
+        pygame.display.flip()
 
     def draw_game_over(self):
         """Prints game over screen"""
         self.screen.blit(self.game_over_surf,(350,350))
-        self.screen.blit(self.restart_surf,(300,420))
+        self.screen.blit(self.restart_surf,(100,420))
         pygame.display.flip()
 
 class NinjaMain:
@@ -505,26 +512,36 @@ class NinjaMain:
         self.view = NinjaView(self.model)
         self.controller = NinjaController(self.model)
         self.clock = pygame.time.Clock()
+        self.pause = False
 
     def setup(self):
+        """Resets values for replay"""
         self.model = NinjaModel()
         self.view = NinjaView(self.model)
         self.controller = NinjaController(self.model)
         self.clock = pygame.time.Clock()
+        self.pause = False
+
+    def startup(self):
+        start = False
+        self.view.draw_start()
+        while not start:
+            for event in pygame.event.get():
+                if event.type == pygame.KEYUP:
+                    start = True 
 
     def MainLoop(self):
         """Game loop"""
-        lastGetTicks = 0.0
-        done = False
-        pause = True  
+        done = False 
+        lastGetTicks = pygame.time.get_ticks()
 
         while not done:
-            if pause:
+            if self.pause:
                 self.view.draw_pause()
                 for event in pygame.event.get():
                     if event.type == pygame.KEYUP:
                         if event.key == pygame.K_p:
-                            pause = False
+                            self.pause = False
                             lastGetTicks = pygame.time.get_ticks()
                             self.model.ninja_jump = 0
                             self.model.ninja_horiz = 0
@@ -536,7 +553,7 @@ class NinjaMain:
                 dt = (t - lastGetTicks) / 1000.0
                 lastGetTicks = t
 
-                done, pause = self.controller.process_events()
+                done, self.pause = self.controller.process_events()
                 self.model.update(dt)
                 self.view.draw()
                 self.clock.tick(60)
@@ -549,15 +566,15 @@ def gameover(MainWindow):
     while start:
         MainWindow.view.draw_game_over()
         for event in pygame.event.get():
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_p:
-                    MainWindow.setup()
-                    MainWindow.MainLoop()
+            if event.type == pygame.KEYDOWN:
+                MainWindow.setup()
+                MainWindow.MainLoop()
             elif event.type == pygame.QUIT:
                 start = False
                 break        
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
+    MainWindow.startup()
     MainWindow.MainLoop()   
     gameover(MainWindow)
