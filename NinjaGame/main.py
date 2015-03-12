@@ -217,7 +217,7 @@ class Shuriken(pygame.sprite.Sprite):
                     p.alive = False
                     return 0
                 elif self.rect.colliderect(p.hitbox) and self.on_ground:
-                    self.model.score += 100
+                    self.model.score += 50
                     self.kill()
                     return 1
                 else: return 0
@@ -320,10 +320,8 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platforms)
 
         # update and collide projectiles
-        self.projectiles.update(dt,self.platforms,self.my_group,1)
-        # for p in self.projectiles.shurikens:
-        #     p.collide(self.platforms)
-        #     p.collide(self.my_group)
+        self.projectiles.update(dt,self.platforms,self.my_group,self.score/100)
+
         self.background.update(dt)
         self.platform.update(dt)
         self.score_dt += dt
