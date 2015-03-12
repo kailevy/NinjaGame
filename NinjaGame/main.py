@@ -5,7 +5,6 @@ Created on Sun Mar 2 11:37 2015
 @author: Kai Levy
 
 TO DO FOR TOMORROW:
-- add death animation and delay before restart game
 - potentially separate into separate files (not urgent)
 - potentially add way to stop stay-at-back exploitation
 - add more comments and documentation
@@ -99,7 +98,7 @@ class Ninja(pygame.sprite.Sprite):
         self.rect = self.rect.move(x_vel,y_vel)
         self.feet = self.feet.move(x_vel,y_vel)
         self.hitbox = self.hitbox.move(x_vel,y_vel)
-        if self.rect.left < 0:              # Bound character within screen on left
+        if self.rect.left < 0 and self.alive:              # Bound character within screen on left
             self.hitbox.left = 16
             self.animation_speed = 0.04
         elif self.rect.right > SCREEN_W:    # Bound character within screen on right
@@ -111,16 +110,15 @@ class Ninja(pygame.sprite.Sprite):
         # Add passed time to time since last image change
         self.dt_image += dt
 
-        self.jump(ninja_jump)
-
-        # Update animation and speed based
-        self.animation_speed = 0.04 - 0.02 * ninja_horiz
-        self.x_vel = ninja_horiz * self.speed
+        if self.alive:
+            self.jump(ninja_jump)
+            self.x_vel = ninja_horiz * self.speed
+            # Update animation and speed
+            self.animation_speed = 0.04 - 0.02 * ninja_horiz
 
         # Fall if in air
         if not self.on_ground:
             self.y_vel += 57
-
 
         self.move(self.x_vel*dt,self.y_vel*dt)
         self.collide(platforms)
@@ -136,6 +134,9 @@ class Ninja(pygame.sprite.Sprite):
         elif self.sprite_num == 2:
             self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height))   # 2nd frame of walk is better jump image
             self.image = self.sheet.subsurface(self.sheet.get_clip())
+        elif self.sprite_num == 3:
+            self.sheet.set_clip(pygame.Rect(self.index * self.width, self.sprite_num * self.height, self.width, self.height))
+            self.image = self.sheet.subsurface(self.sheet.get_clip())
 
     def collide(self, platforms):
         """Checks for collisions with platforms"""
@@ -146,9 +147,10 @@ class Ninja(pygame.sprite.Sprite):
                 self.hitbox.bottom = p.rect.top - 10
                 self.on_ground = True
                 self.y_vel = 0
-                self.sprite_num = 0
-                self.index = 0
-                self.jump_counter = 0
+                if self.alive:
+                    self.sprite_num = 0
+                    self.index = 0
+                    self.jump_counter = 0
             if self.feet.colliderect(p.safebox):
                 walking = True
             if self.hitbox.colliderect(p.safebox):
@@ -158,6 +160,9 @@ class Ninja(pygame.sprite.Sprite):
                     self.hitbox.left = p.safebox.right
             if self.hitbox.colliderect(p.killbox1) or self.hitbox.colliderect(p.killbox2):
                 self.alive = False
+                self.sprite_num = 3
+                self.index = 1
+                self.x_vel = -p.speed
             self.correct_boxes()
 
         if not walking:
@@ -193,6 +198,7 @@ class Shuriken(pygame.sprite.Sprite):
         # Velocities for updating position
         self.y_vel = 650
         self.x_vel = (GROUNDSPEED + speedboost) * (random.random() * 4 - 1)
+        self.speedboost = speedboost
         self.on_ground = False
 
         self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
@@ -215,6 +221,7 @@ class Shuriken(pygame.sprite.Sprite):
                 self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
                 self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
         else: self.x_vel = GROUNDSPEED + speedboost
+        self.speedboost = speedboost
         self.rect = self.rect.move(-self.x_vel*dt, self.y_vel*dt)
 
     def collide(self, collideable):
@@ -223,8 +230,11 @@ class Shuriken(pygame.sprite.Sprite):
             if type(p) is Ninja:
                 if self.rect.colliderect(p.hitbox) and not self.on_ground:
                     p.alive = False
+                    p.sprite_num = 3
+                    p.index = 1
+                    p.x_vel = -GROUNDSPEED - self.speedboost
                     return 0
-                elif self.rect.colliderect(p.hitbox) and self.on_ground:
+                elif self.rect.colliderect(p.hitbox) and self.on_ground and p.alive:
                     self.model.score += 50
                     self.kill()
                     return 1
@@ -302,7 +312,7 @@ class Platform(pygame.sprite.Sprite):
     def __init__(self,x,style,story=-1):
         pygame.sprite.Sprite.__init__(self)
         if style == GROUND:
-            self.image = pygame.Surface([SCREEN_W + 400, 1000])
+            self.image = pygame.Surface([SCREEN_W + 800, 1000])
             self.image.fill(BLACK)
             self.rect = self.image.get_rect()
             self.rect.x = x
@@ -334,7 +344,7 @@ class Platform(pygame.sprite.Sprite):
 class PlatformHandler():
     """Class to handle the platforms"""
     def __init__(self):
-        ground = Platform(0, GROUND)
+        ground = Platform(-400, GROUND)
         self.platforms = pygame.sprite.Group(ground)
         self.release_platform = True
         self.append_platform = True
@@ -403,12 +413,13 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platform_handler.platforms)
 
         # update and collide projectiles
-        self.projectiles.update(dt,self.platform_handler.platforms,self.my_group,self.score/120 + 1,self.speedboost)
+        self.projectiles.update(dt,self.platform_handler.platforms,self.my_group,self.score/150 + 1,self.speedboost)
 
         self.background.update(dt,self.speedboost)
 
         self.platform_handler.update(dt,self.speedboost)
-        self.score_dt += dt
+        if self.my_sprite.alive:
+            self.score_dt += dt
 
         self.alive = self.my_sprite.alive
 
@@ -484,7 +495,7 @@ class NinjaView:
         self.hiscore_surf = self.font.render("HI: " + hiscore, False, BLACK)
         pygame.display.set_caption("NINJAs")
 
-    def draw(self):
+    def draw(self, alive):
         """Redraws game window, fetching drawables from model"""
         self.screen.fill(WHITE)
 
@@ -500,6 +511,8 @@ class NinjaView:
         # pygame.draw.rect(self.screen, [255,0,0], self.model.my_sprite.feet)
 
         self.draw_score()
+        if not alive:
+            self.screen.blit(self.font.render("GAME OVER", False, RED),(350,350))
         pygame.display.flip()
 
     def draw_pause(self):
@@ -517,7 +530,7 @@ class NinjaView:
 
     def draw_start(self):
         """Draws screen for startup"""
-        self.draw()
+        self.draw(True)
         self.screen.blit(self.objective_surf,(65,320))
         self.screen.blit(self.objective_surf2,(180,380))
         self.screen.blit(self.instructions_surf, (70, 140))
@@ -585,9 +598,18 @@ class NinjaMain:
 
                 done, self.pause = self.controller.process_events()
                 self.model.update(dt)
-                self.view.draw()
+                self.view.draw(self.model.alive)   # not game over
                 self.clock.tick(60)
-            else: 
+            else:
+                while self.model.my_sprite.rect.right > -50:
+                    t = pygame.time.get_ticks()
+                    # delta time in seconds.
+                    dt = (t - lastGetTicks) / 1000.0
+                    lastGetTicks = t
+
+                    done, self.pause = self.controller.process_events()
+                    self.model.update(dt)
+                    self.view.draw(self.model.alive)
                 done = True 
                 if os.path.exists(CURR_DIR + '/hiscore.txt'):
                     count = pickle.load(open(CURR_DIR + '/hiscore.txt', 'rb'))
