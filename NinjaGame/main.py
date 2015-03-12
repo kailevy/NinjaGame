@@ -163,7 +163,7 @@ class Platform(pygame.sprite.Sprite):
     def __init__(self,x,style,story=-1):
         pygame.sprite.Sprite.__init__(self)
         if style == GROUND:
-            self.image = pygame.Surface([SCREEN_W, 1000])
+            self.image = pygame.Surface([SCREEN_W + 400, 1000])
             self.image.fill(BLACK)
             self.rect = self.image.get_rect()
             self.rect.x = x
@@ -203,7 +203,7 @@ class Shuriken(pygame.sprite.Sprite):
 
         # Velocities for updating position
         self.y_vel = 650
-        self.x_vel = GROUNDSPEED * (random.random() * 4 - 2)
+        self.x_vel = GROUNDSPEED * (random.random() * 4 - 1)
         self.on_ground = False
 
         self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
