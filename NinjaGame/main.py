@@ -431,6 +431,12 @@ class NinjaMain:
         self.controller = NinjaController(self.model)
         self.clock = pygame.time.Clock()
 
+    def setup(self):
+        self.model = NinjaModel()
+        self.view = NinjaView(self.model)
+        self.controller = NinjaController(self.model)
+        self.clock = pygame.time.Clock()
+
     def MainLoop(self):
         """Game loop"""
         lastGetTicks = 0.0
@@ -460,13 +466,36 @@ class NinjaMain:
                 self.view.draw()
                 self.clock.tick(60)
             else: 
-                self.view.draw_game_over()
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        done = True
+                done = True 
 
+def gameover(MainWindow):
+    start = True
+    while start:
+        MainWindow.view.draw_game_over()
+        for event in pygame.event.get():
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_p:
+                    MainWindow.setup()
+                    MainWindow.MainLoop()
+            elif event.type == pygame.QUIT:
+                start = False
+                break
+                
 
 
 if __name__ == '__main__':
     MainWindow = NinjaMain()
     MainWindow.MainLoop()
+    # start = True
+    # # while start:
+    # #     for event in pygame.event.get():
+    # #         if event.type == pygame.KEYUP:
+    # #             if event.key == pygame.K_p:
+    # #                 print 'p'
+    # #                 MainWindow.setup()
+    # #                 MainWindow.MainLoop()
+    # #         elif event.type == pygame.QUIT:
+    # #             print 'x'
+    # #             start = False
+    # #         else: print 'o'    
+    gameover(MainWindow)
