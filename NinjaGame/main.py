@@ -182,6 +182,7 @@ class Shuriken(pygame.sprite.Sprite):
         self.width = 42
         self.height = 42
 
+        # Velocities for updating position
         self.y_vel = 650
         self.x_vel = 354
         self.on_ground = False
@@ -286,8 +287,10 @@ class NinjaModel:
 
     def update(self,dt):
         """Updates player and background"""
+        # update ninja
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platforms)
 
+        # update and collide projectiles
         self.projectiles.update(dt)
         for p in self.projectiles:
             p.collide(self.platforms)
@@ -296,7 +299,7 @@ class NinjaModel:
         self.platform.update(dt)
         self.score_dt += dt
 
-        self.alive  = self.my_sprite.alive
+        self.alive = self.my_sprite.alive
 
         if self.score_dt >= self.score_speed:
             self.update_score()
