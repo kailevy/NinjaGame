@@ -4,6 +4,12 @@ Created on Sun Mar 2 11:37 2015
 @author: Franton Lin
 @author: Kai Levy
 
+TO DO FOR TOMORROW:
+- add death animation and delay before restart game
+- potentially separate into separate files (not urgent)
+- potentially add way to stop stay-at-back exploitation
+- add more comments and documentation
+
 """
 
 import pygame
@@ -74,6 +80,7 @@ class Ninja(pygame.sprite.Sprite):
         self.index += 1
 
     def jump(self, ninja_jump):
+        """Makes the ninja jump"""
         if ninja_jump and self.jump_counter < self.max_jump:
             self.y_vel += -248
             self.jump_counter += 1
