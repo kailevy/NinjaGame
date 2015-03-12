@@ -270,7 +270,7 @@ class Projectiles():
         self.num_shurikens -= num_gone 
         if self.num_shurikens < max_num:
             rand = random.random()
-            if rand < dt * 4:
+            if rand < dt * 2:
                 Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model).add(self.shurikens)
                 self.num_shurikens += 1
                 
@@ -349,9 +349,6 @@ class PlatformHandler():
                 else:
                     Platform(SCREEN_W,BUILDING2,1).add(self.platforms)
 
-
-        #print self.release_platform
-        print len(self.platforms)
 
 class NinjaModel:
     """Model for game"""
