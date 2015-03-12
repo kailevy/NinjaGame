@@ -17,7 +17,6 @@ FRAMERATE = 60
 BLACK    = (  0,   0,   0)
 WHITE    = (255, 255, 255)
 RED      = (255,   0,   0)
-GRAY     = (128, 128, 128)
 SCREEN_W = 1024
 SCREEN_H = 768
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -114,6 +113,7 @@ class Ninja(pygame.sprite.Sprite):
         if not self.on_ground:
             self.y_vel += 57
 
+
         self.move(self.x_vel*dt,self.y_vel*dt)
         self.collide(platforms)
         
@@ -153,7 +153,10 @@ class Ninja(pygame.sprite.Sprite):
             self.correct_boxes()
 
         if not walking:
+            if self.on_ground == True:
+                self.jump_counter = self.max_jump
             self.on_ground = False
+
 
     def correct_boxes(self):
         """Corrects the rectangles during collisions based off of hitbox"""
@@ -248,20 +251,20 @@ class Projectiles():
         self.num_shurikens -= num_gone 
         if self.num_shurikens < max_num:
             rand = random.random()
-            if rand < dt * 1.5:
+            if rand < dt * 1.6:
                 Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model,speedboost).add(self.shurikens)
                 self.num_shurikens += 1
                 
 class Grass(pygame.sprite.Sprite):
     """Grass class"""
-    def __init__(self, speedboost):
+    def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         rand = random.randint(1,8)
         self.image = pygame.image.load(CURR_DIR + "/images/grass%d.png"%rand)   # Load a random grass image
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.rect = pygame.Rect(SCREEN_W, SCREEN_H-self.height+3, self.width, self.height)
-        self.speed = GROUNDSPEED + speedboost
+        self.speed = GROUNDSPEED 
 
     def update(self, dt,speedboost):
         """Moves the grass"""
@@ -270,7 +273,7 @@ class Grass(pygame.sprite.Sprite):
 class Background():
     """Class for background"""
     def __init__(self):
-        self.grass = pygame.sprite.Group(Grass(0))
+        self.grass = pygame.sprite.Group(Grass())
         self.num_grass = 1
 
     def update(self,dt,speedboost):
@@ -278,7 +281,7 @@ class Background():
         if self.num_grass < MAX_GRASS:   # Chance of adding grass if MAX_GRASS isn't reached
             rand = random.random()
             if rand < dt*4:
-                Grass(speedboost).add(self.grass)
+                Grass().add(self.grass)
                 self.num_grass += 1
         for g in self.grass:             # Remove any grass no longer on the screen from the group
             if g.rect.right < 0:
@@ -328,7 +331,6 @@ class PlatformHandler():
         self.release_platform = True
         self.append_platform = True
         self.num_platforms = 0
-        self.max_stories = 2
 
     def update(self,dt,speedboost):
         """Updates all platforms, generates more and removes obsolete ones"""
@@ -393,7 +395,7 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platform_handler.platforms)
 
         # update and collide projectiles
-        self.projectiles.update(dt,self.platform_handler.platforms,self.my_group,self.score/100,self.speedboost)
+        self.projectiles.update(dt,self.platform_handler.platforms,self.my_group,self.score/120 + 1,self.speedboost)
 
         self.background.update(dt,self.speedboost)
 
@@ -405,7 +407,7 @@ class NinjaModel:
         if self.score_dt >= self.score_speed:
             self.update_score()
             self.score_dt = 0
-        self.speedboost = self.score / 50
+        self.speedboost = self.score / 10
 
     def update_score(self):
         """Adds 10 to score"""
@@ -463,6 +465,7 @@ class NinjaView:
         self.pause_surf = self.font.render("PRESS P!", False, BLACK)
         self.instructions_surf = self.font.render("MOVE WITH ARROWS OR WASD", False, BLACK)
         self.startup_surf = self.font.render("PRESS ANY KEY TO BEGIN", False, BLACK)
+        self.startup_surf2 = self.font.render("PRESS P TO PAUSE", False, BLACK)
         self.game_over_surf = self.font.render("GAME OVER", False, RED)
         self.restart_surf = self.font.render("PRESS ANY KEY TO RESTART", False, RED)
         if os.path.exists(CURR_DIR + '/hiscore.txt'):
@@ -491,7 +494,7 @@ class NinjaView:
 
     def draw_pause(self):
         """Draws pause menu"""
-        self.screen.fill(GRAY)
+        self.screen.fill(WHITE)
         self.screen.blit(self.pause_surf,(380,200))
         self.screen.blit(self.instructions_surf, (70,90))
         pygame.display.flip()
@@ -507,6 +510,7 @@ class NinjaView:
         self.draw()
         self.screen.blit(self.instructions_surf, (70, 140))
         self.screen.blit(self.startup_surf, (100, 200))
+        self.screen.blit(self.startup_surf2, (215, 260))
         pygame.display.flip()
 
     def draw_game_over(self):
