@@ -164,7 +164,7 @@ class Ninja(pygame.sprite.Sprite):
 
 class Shuriken(pygame.sprite.Sprite):
     """Shuriken class"""
-    def __init__(self, x_pos,model):
+    def __init__(self, x_pos,model,speedboost):
         pygame.sprite.Sprite.__init__(self)
 
         self.model = model
@@ -181,7 +181,7 @@ class Shuriken(pygame.sprite.Sprite):
 
         # Velocities for updating position
         self.y_vel = 650
-        self.x_vel = GROUNDSPEED * (random.random() * 4 - 1)
+        self.x_vel = (GROUNDSPEED + speedboost) * (random.random() * 4 - 1)
         self.on_ground = False
 
         self.rect = pygame.Rect(x_pos, -self.height, self.width, self.height)
@@ -190,7 +190,7 @@ class Shuriken(pygame.sprite.Sprite):
         self.image = self.sheet.subsurface(self.sheet.get_clip())
         self.index += 1
 
-    def update(self, dt):
+    def update(self, dt, speedboost):
         """Updates shuriken"""
         self.dt_image += dt
 
@@ -203,7 +203,7 @@ class Shuriken(pygame.sprite.Sprite):
                 self.dt_image = 0
                 self.sheet.set_clip(pygame.Rect(self.index * self.width, 0, self.width, self.height)) # Locate the sprite you want
                 self.image = self.sheet.subsurface(self.sheet.get_clip()) # Extract the sprite you want
-        else: self.x_vel = 354
+        else: self.x_vel = GROUNDSPEED + speedboost
         self.rect = self.rect.move(-self.x_vel*dt, self.y_vel*dt)
 
     def collide(self, collideable):
@@ -231,13 +231,13 @@ class Projectiles():
     """Represents all the shurikens"""
     def __init__(self,model):
         self.model = model
-        self.shurikens = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model))
+        self.shurikens = pygame.sprite.Group(Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model,0))
         self.num_shurikens = 1
 
-    def update(self,dt,platforms,my_group,max_num):
+    def update(self,dt,platforms,my_group,max_num,speedboost):
         """Adds shurikens"""
         num_gone = 0
-        self.shurikens.update(dt)
+        self.shurikens.update(dt,speedboost)
         for p in self.shurikens:
             p.collide(platforms)
             num_gone += p.collide(my_group)
@@ -248,43 +248,43 @@ class Projectiles():
         self.num_shurikens -= num_gone 
         if self.num_shurikens < max_num:
             rand = random.random()
-            if rand < dt * 1.7:
-                Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model).add(self.shurikens)
+            if rand < dt * 1.5:
+                Shuriken(SCREEN_W/2+SCREEN_W/2*random.random(),self.model,speedboost).add(self.shurikens)
                 self.num_shurikens += 1
                 
 class Grass(pygame.sprite.Sprite):
     """Grass class"""
-    def __init__(self):
+    def __init__(self, speedboost):
         pygame.sprite.Sprite.__init__(self)
         rand = random.randint(1,8)
         self.image = pygame.image.load(CURR_DIR + "/images/grass%d.png"%rand)   # Load a random grass image
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.rect = pygame.Rect(SCREEN_W, SCREEN_H-self.height+3, self.width, self.height)
-        self.speed = GROUNDSPEED
+        self.speed = GROUNDSPEED + speedboost
 
-    def update(self, dt):
+    def update(self, dt,speedboost):
         """Moves the grass"""
-        self.rect = self.rect.move(-self.speed*dt,0)
+        self.rect = self.rect.move(-(self.speed + speedboost)*dt,0)
 
 class Background():
     """Class for background"""
     def __init__(self):
-        self.grass = pygame.sprite.Group(Grass())
+        self.grass = pygame.sprite.Group(Grass(0))
         self.num_grass = 1
 
-    def update(self,dt):
+    def update(self,dt,speedboost):
         """Updates background with grass tufts"""
         if self.num_grass < MAX_GRASS:   # Chance of adding grass if MAX_GRASS isn't reached
             rand = random.random()
             if rand < dt*4:
-                Grass().add(self.grass)
+                Grass(speedboost).add(self.grass)
                 self.num_grass += 1
         for g in self.grass:             # Remove any grass no longer on the screen from the group
             if g.rect.right < 0:
                 g.kill()
                 self.num_grass -= 1
-        self.grass.update(dt)
+        self.grass.update(dt,speedboost)
 
 class Platform(pygame.sprite.Sprite):
     """Class for platforms that the Ninja can land on"""
@@ -310,9 +310,12 @@ class Platform(pygame.sprite.Sprite):
             self.killbox1 = pygame.Rect(self.rect.x + 4, self.rect.y + 6, 8, self.rect.height - 6)
             self.killbox2 = pygame.Rect(self.rect.x + self.rect.width - 12, self.rect.y + 6, 7, self.rect.height - 6)
 
-    def update(self, dt):
+    def update(self, dt, speedboost):
         """Move the platforms"""
-        self.rect = self.rect.move(-self.speed*dt,0)
+        if self.speed != 0:
+            self.rect = self.rect.move(-(self.speed + speedboost)*dt,0)
+        else:
+            pass
         self.safebox = pygame.Rect(self.rect.x + 11, self.rect.y, self.rect.width - 22, self.rect.height)   
         self.killbox1 = pygame.Rect(self.rect.x + 4, self.rect.y + 6, 8, self.rect.height - 6)
         self.killbox2 = pygame.Rect(self.rect.x + self.rect.width - 12, self.rect.y + 6, 7, self.rect.height - 6)
@@ -327,11 +330,11 @@ class PlatformHandler():
         self.num_platforms = 0
         self.max_stories = 2
 
-    def update(self,dt):
+    def update(self,dt,speedboost):
         """Updates all platforms, generates more and removes obsolete ones"""
         self.release_platform = True
         for p in self.platforms:        # Remove any platforms no longer on the screen from the group
-            p.update(dt)
+            p.update(dt,speedboost)
             if p.rect.height < 1000:    # Do not check ground
                 if p.rect.right < 0:
                     p.kill()
@@ -374,6 +377,7 @@ class NinjaModel:
         self.my_group = pygame.sprite.Group(self.my_sprite)
         self.platform_handler = PlatformHandler()
 
+        self.speedboost = 0
         self.alive = self.my_sprite.alive
 
         self.projectiles = Projectiles(self)
@@ -389,11 +393,11 @@ class NinjaModel:
         self.my_group.update(dt, self.ninja_horiz, self.ninja_jump, self.platform_handler.platforms)
 
         # update and collide projectiles
-        self.projectiles.update(dt,self.platform_handler.platforms,self.my_group,self.score/100)
+        self.projectiles.update(dt,self.platform_handler.platforms,self.my_group,self.score/100,self.speedboost)
 
-        self.background.update(dt)
+        self.background.update(dt,self.speedboost)
 
-        self.platform_handler.update(dt)
+        self.platform_handler.update(dt,self.speedboost)
         self.score_dt += dt
 
         self.alive = self.my_sprite.alive
@@ -401,6 +405,7 @@ class NinjaModel:
         if self.score_dt >= self.score_speed:
             self.update_score()
             self.score_dt = 0
+        self.speedboost = self.score / 50
 
     def update_score(self):
         """Adds 10 to score"""
