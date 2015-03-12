@@ -220,7 +220,7 @@ class Shuriken(pygame.sprite.Sprite):
                 if self.rect.colliderect(p.hitbox) and not self.on_ground:
                     p.alive = False
                 elif self.rect.colliderect(p.hitbox) and self.on_ground:
-                    self.model.score += 50
+                    self.model.score += 100
                     self.kill()
 
             elif self.rect.colliderect(p):
@@ -395,7 +395,7 @@ class NinjaView:
         self.screen.blit(self.score_surf, (20,20))
 
     def draw_game_over(self):
-        self.screen.blit(self.game_over_surf,(300,500))
+        self.screen.blit(self.game_over_surf,(350,350))
         pygame.display.flip()
 
 class NinjaMain:
@@ -438,7 +438,12 @@ class NinjaMain:
                 self.view.draw()
 
                 self.clock.tick(60)
-            else: self.view.draw_game_over()
+            else: 
+                self.view.draw_game_over()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        done = True
+
 
             
                     
